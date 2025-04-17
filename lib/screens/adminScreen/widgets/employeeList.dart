@@ -1,0 +1,303 @@
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:maowl/screens/adminScreen/controller/adminScreenController.dart';
+import 'package:maowl/screens/adminScreen/widgets/employeeProjects.dart';
+
+class EmployeeList extends StatelessWidget {
+  EmployeeList({Key? key}) : super(key: key);
+
+  final AdminScreenController controller = Get.find<AdminScreenController>();
+  final RxBool isEditingPassword = false.obs;
+  final RxString newPassword = "".obs;
+  final RxBool isViewingProjects = false.obs;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() => isViewingProjects.value
+        ? EmployeeProjects(
+            employee: controller.selectedEmployee.value!,
+            onBack: () => isViewingProjects.value = false,
+          )
+        : _buildEmployeeListScreen());
+  }
+
+  // Show delete confirmation dialog with GetX
+  void _showDeleteConfirmation(Map<String, dynamic> employee) {
+    final id = employee['_id'] ?? '';
+    final name = employee['username'] ?? 'Unknown';
+    
+    Get.dialog(
+      AlertDialog(
+        title: Text(
+          'Delete Employee', 
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to delete $name?',
+          style: TextStyle(color: Colors.black87),
+        ),
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8.sp),
+          side: BorderSide(color: Colors.grey.shade300),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: Colors.black54),
+            ),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.black,
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Get.back();
+              await controller.deleteEmployee(id);
+            },
+            child: Text('Delete'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.black,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(4.sp),
+              ),
+            ),
+          ),
+        ],
+        actionsPadding: EdgeInsets.symmetric(horizontal: 16.sp, vertical: 8.sp),
+      ),
+      barrierDismissible: false,
+    );
+  }
+
+  Widget _buildEmployeeListScreen() {
+    return Container(
+      color: Colors.white,
+      child: Obx(() {
+        if (controller.isLoading.value) {
+          return Center(child: CircularProgressIndicator());
+        }
+
+        if (controller.errorMessage.value.isNotEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline, color: Colors.black, size: 48),
+                SizedBox(height: 16),
+                Text(
+                  controller.errorMessage.value,
+                  style: TextStyle(color: Colors.black),
+                  textAlign: TextAlign.center,
+                ),
+                ElevatedButton(
+                  onPressed: () => controller.fetchEmployees(),
+                  child: Text('Retry'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        if (controller.employees.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.people_outline, size: 48),
+                SizedBox(height: 16),
+                Text('No employees found'),
+                SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => controller.fetchEmployees(),
+                  child: Text('Refresh'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: EdgeInsets.all(16.sp),
+              child: Text(
+                'Employees List',
+                style: TextStyle(
+                  fontSize: 24.sp,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            Divider(height: 1),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: () => controller.fetchEmployees(),
+                child: ListView.separated(
+                  itemCount: controller.employees.length,
+                  separatorBuilder: (context, index) => Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final employee = controller.employees[index];
+                    // Use username instead of name since that's what the API returns
+                    final name = employee['username'] ?? 'Unknown';
+                    final firstLetter = name.isNotEmpty ? name[0].toUpperCase() : 'U';
+                    final id = employee['_id'] ?? '';
+
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: Colors.black,
+                        child: Text(
+                          firstLetter,
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                      title: Text(name),
+                      subtitle: Row(
+                        children: [
+                          Text('Password: '),
+                          Obx(() {
+                            final isEditing = isEditingPassword.value && 
+                                             controller.selectedEmployee.value?['_id'] == id;
+                            
+                            if (isEditing) {
+                              return Expanded(
+                                child: TextField(
+                                  obscureText: true,
+                                  decoration: InputDecoration(
+                                    hintText: 'Enter new password',
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.symmetric(
+                                      vertical: 8.sp,
+                                      horizontal: 8.sp,
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(4.sp),
+                                    ),
+                                  ),
+                                  onChanged: (value) => newPassword.value = value,
+                                ),
+                              );
+                            } else {
+                              return Text('********', 
+                                style: TextStyle(fontStyle: FontStyle.italic));
+                            }
+                          }),
+                          SizedBox(width: 8.w),
+                          Obx(() {
+                            // Fixed here - using _id instead of id
+                            final isEditing = isEditingPassword.value && 
+                                             controller.selectedEmployee.value?['_id'] == id;
+                            
+                            if (isEditing) {
+                              return Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: Icon(Icons.check, color: Colors.green),
+                                    onPressed: () async {
+                                      if (newPassword.value.isNotEmpty) {
+                                        final success = await controller.updateEmployeePassword(
+                                          id, 
+                                          newPassword.value
+                                        );
+                                        if (success) {
+                                          isEditingPassword.value = false;
+                                          newPassword.value = "";
+                                        }
+                                      } else {
+                                        Get.snackbar(
+                                          "Error",
+                                          "Password cannot be empty",
+                                          snackPosition: SnackPosition.BOTTOM,
+                                          backgroundColor: Colors.red,
+                                          colorText: Colors.white,
+                                        );
+                                      }
+                                    },
+                                    tooltip: 'Save',
+                                    padding: EdgeInsets.zero,
+                                    constraints: BoxConstraints(),
+                                    iconSize: 20.sp,
+                                  ),
+                                  IconButton(
+                                    icon: Icon(Icons.close, color: Colors.red),
+                                    onPressed: () {
+                                      isEditingPassword.value = false;
+                                      newPassword.value = "";
+                                    },
+                                    tooltip: 'Cancel',
+                                    padding: EdgeInsets.zero,
+                                    constraints: BoxConstraints(),
+                                    iconSize: 20.sp,
+                                  ),
+                                ],
+                              );
+                            } else {
+                              return IconButton(
+                                icon: Icon(Icons.edit, size: 20.sp),
+                                onPressed: () {
+                                  controller.setSelectedEmployee(employee);
+                                  isEditingPassword.value = true;
+                                },
+                                tooltip: 'Edit Password',
+                                padding: EdgeInsets.zero,
+                                constraints: BoxConstraints(),
+                              );
+                            }
+                          }),
+                        ],
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.delete, color: Colors.black, size: 14.sp,),
+                            onPressed: () {
+                              controller.setSelectedEmployee(employee);
+                              _showDeleteConfirmation(employee);
+                            },
+                            tooltip: 'Delete Employee',
+                          ),
+                          SizedBox(width: 4.w),
+                          ElevatedButton(
+                            onPressed: () {
+                              controller.setSelectedEmployee(employee);
+                              isViewingProjects.value = true;
+                            },
+                            child: Text('View'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.black,
+                              foregroundColor: Colors.white,
+                              padding: EdgeInsets.symmetric(horizontal: 16.sp),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
+        );
+      }),
+    );
+  }
+}
