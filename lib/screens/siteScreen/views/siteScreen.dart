@@ -31,7 +31,7 @@ class _SiteScreenState extends State<SiteScreen> {
         children: [
           // First Section
         // First Section with continuous auto-scrolling images
-Container(
+SizedBox(
   width: double.infinity,
   height: MediaQuery.of(context).size.height,
   child: Column(
@@ -42,11 +42,11 @@ Container(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Container(
+            SizedBox(
               height: 300.h,
               width: 300.w,
               child: Image.asset(
-                'assets/images/M02_01_ PNG.png',
+                'assets/images/M02_01.png',
                 fit: BoxFit.contain,
               ),
             ),
@@ -100,50 +100,51 @@ Container(
       SizedBox(height: 30.h),
       
       // Auto-scrolling image carousel
-      Expanded(
-        child: AbsorbPointer( // This prevents user interaction with the scroll view
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            controller: _siteController.scrollController,
-            physics: NeverScrollableScrollPhysics(), // Disable manual scrolling
-            child: Row(
-              children: [
-                'assets/images/pexels-cottonbro-4709364.jpg',
-                'assets/images/pexels-jamalyahyayev-12863114.jpg',
-                'assets/images/pexels-mikhail-nilov-9242925.jpg',
-                'assets/images/pexels-pixabay-163125.jpg',
-                'assets/images/pexels-thisisengineering-19895784.jpg',
-                'assets/images/pexels-vanessa-loring-7869034.jpg',
-              ].map((imagePath) {
-                return Container(
-                  width: 889.w,
-                  height: 511.h,
-                  margin: EdgeInsets.symmetric(horizontal: 8.w),
-                  decoration: BoxDecoration(
-                    image: DecorationImage(
-                      image: AssetImage(imagePath),
-                      fit: BoxFit.cover,
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.4),
-                        offset: Offset(0, 4),
-                        blurRadius: 8,
-                      ),
-                    ],
-                  ),
-                ).animate().fadeIn(duration: 500.ms).slideX();
-              }).toList(),
+     Expanded(
+  child: AbsorbPointer( // This prevents user interaction with the scroll view
+    child: SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      controller: _siteController.scrollController,
+      physics: NeverScrollableScrollPhysics(), // Disable manual scrolling
+      child: Row(
+        children: [
+          'assets/images/pexels-cottonbro-4709364.jpg',
+          'assets/images/pexels-jamalyahyayev-12863114.jpg',
+          'assets/images/pexels-mikhail-nilov-9242925.jpg',
+          'assets/images/pexels-pixabay-163125.jpg',
+          'assets/images/pexels-thisisengineering-19895784.jpg',
+          'assets/images/pexels-vanessa-loring-7869034.jpg',
+        ].map((imagePath) {
+          return Container(
+            width: 889.w,
+            height: 511.h,
+            margin: EdgeInsets.symmetric(horizontal: 8.w),
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage(imagePath),  // Correct path without replacing
+                fit: BoxFit.cover,
+              ),
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.4),
+                  offset: Offset(0, 4),
+                  blurRadius: 8,
+                ),
+              ],
             ),
-          ),
-        ),
+          ).animate().fadeIn(duration: 500.ms).slideX();
+        }).toList(),
       ),
+    ),
+  ),
+)
+
     ],
   ),
 ),
           // Second Section
-          Container(
+          SizedBox(
             width: double.infinity,
             height: MediaQuery.of(context).size.height,
             child: Column(
@@ -286,7 +287,7 @@ Container(
           ),
 
           // Third Section
-          Container(
+          SizedBox(
             width: double.infinity,
             height: MediaQuery.of(context).size.height,
             child: Column(
@@ -376,7 +377,7 @@ Container(
             color: Colors.black,
             child: Stack(
               children: [
-                Container(
+                SizedBox(
                   width: double.infinity,
                   child: Image.asset(
                     'assets/images/Frame 52.png',

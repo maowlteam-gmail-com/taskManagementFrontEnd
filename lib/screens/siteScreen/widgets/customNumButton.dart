@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -6,8 +5,7 @@ class CustomNumButtom extends StatelessWidget {
   final String text1;
   final String text2;
 
-  const CustomNumButtom({Key? key, required this.text1, required this.text2})
-      : super(key: key);
+  const CustomNumButtom({super.key, required this.text1, required this.text2});
 
   @override
   Widget build(BuildContext context) {

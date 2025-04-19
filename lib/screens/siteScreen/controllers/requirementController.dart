@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart' as dio;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -57,7 +58,7 @@ class RequirementController extends GetxController {
     if (kIsWeb) {
       return webPdfName.value.isNotEmpty ? webPdfName.value : null;
     } else {
-      return pdfFile.value != null ? pdfFile.value!.path.split('/').last : null;
+      return pdfFile.value?.path.split('/').last;
     }
   }
 
@@ -117,10 +118,10 @@ class RequirementController extends GetxController {
       // Determine correct URL based on platform
       String baseUrl;
       if (kIsWeb) {
-        baseUrl = 'http://localhost:5001';
+        baseUrl = '${dotenv.env['BASE_URL']}';
       } else {
         // For Android emulators, use 10.0.2.2 instead of localhost
-        baseUrl = Platform.isAndroid ? 'http://10.0.2.2:5001' : 'http://localhost:5001';
+        baseUrl = Platform.isAndroid ? 'http://10.0.2.2:5001' : '${dotenv.env['BASE_URL']}';
         // For physical devices, use your computer's IP address
         // baseUrl = 'http://192.168.1.X:5001'; // Replace with your actual IP
       }

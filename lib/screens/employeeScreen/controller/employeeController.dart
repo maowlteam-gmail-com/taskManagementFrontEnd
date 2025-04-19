@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart'; 
-import 'package:flutter/material.dart'; 
+import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart'; 
 import 'package:get/get.dart'; 
 import 'package:get_storage/get_storage.dart'; 
-import 'package:maowl/screens/siteScreen/views/siteScreen.dart';  
 
 class Employeecontroller extends GetxController {   
   // Initialize with a safe default value   
@@ -67,7 +67,7 @@ class Employeecontroller extends GetxController {
       }              
       
       final response = await Dio().post(         
-        'http://localhost:5001/api/logout',         
+        '${dotenv.env['BASE_URL']}/api/logout',         
         options: Options(           
           headers: {             
             "Content-Type": "application/json",             

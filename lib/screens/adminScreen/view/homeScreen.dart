@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:dio/dio.dart';
@@ -110,7 +111,7 @@ class HomeController extends GetxController {
     try {
       final token = box.read('token');
       final response = await dio.get(
-        'http://localhost:5001/requirement/filtered',
+        '${dotenv.env['BASE_URL']}/requirement/filtered',
         options: Options(
           headers: {
             "Content-Type": "application/json",
@@ -145,7 +146,7 @@ class HomeController extends GetxController {
   try {
     final token = box.read('token');
     final response = await dio.get(
-      'http://localhost:5001/api/getEmployees',
+      '${dotenv.env['BASE_URL']}/api/getEmployees',
       options: Options(
         headers: {
           "Content-Type": "application/json",
@@ -199,7 +200,7 @@ class HomeController extends GetxController {
     try {
       final token = box.read('token');
       final response = await dio.get(
-        'http://localhost:5001/requirement/$requirementId/download',
+        '${dotenv.env['BASE_URL']}/requirement/$requirementId/download',
         options: Options(
           headers: {
             "Authorization": "Bearer $token",
@@ -265,7 +266,7 @@ class HomeController extends GetxController {
     try {
       final token = box.read('token');
       final response = await dio.patch(
-        'http://localhost:5001/requirement/$requirementId/assign',
+        '${dotenv.env['BASE_URL']}/requirement/$requirementId/assign',
         data: {
           "employeeId": employeeId
         },
@@ -314,7 +315,7 @@ class HomeController extends GetxController {
 class HomeScreen extends StatelessWidget {
   final HomeController controller = Get.put(HomeController());
 
-  HomeScreen({Key? key}) : super(key: key);
+  HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -612,7 +613,7 @@ class HomeScreen extends StatelessWidget {
               ],
             ),
             SizedBox(height: 20.h),
-            Container(
+            SizedBox(
               width: 400.w,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -638,7 +639,7 @@ class HomeScreen extends StatelessWidget {
               children: [
                 if (requirement.pdfFile.isNotEmpty)
                   Obx(() => controller.isDownloading.value 
-                    ? Container(
+                    ? SizedBox(
                         width: 200.w,
                         child: Column(
                           children: [
@@ -742,11 +743,11 @@ void _showAssignDialog(String requirementId) {
                 SizedBox(height: 16.h),
                 ElevatedButton(
                   onPressed: () => Get.back(),
-                  child: Text('Close'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
                     foregroundColor: Colors.white,
                   ),
+                  child: Text('Close'),
                 ),
               ],
             );
@@ -783,7 +784,7 @@ void _showAssignDialog(String requirementId) {
                         items: controller.employees.map((employee) {
                           return DropdownMenuItem<String>(
                             value: employee.id,
-                            child: Text('${employee.username}'),
+                            child: Text(employee.username),
                           );
                         }).toList(),
                         onChanged: (value) {
@@ -817,11 +818,11 @@ void _showAssignDialog(String requirementId) {
                                 );
                                 Get.back(); // Close requirement details dialog
                               },
-                        child: Text('Assign'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.black,
                           foregroundColor: Colors.white,
                         ),
+                        child: Text('Assign'),
                       ),
                     ],
                   ),
@@ -843,7 +844,7 @@ void _showAssignDialog(String requirementId) {
           SizedBox(
             width: 100.w,
             child: Text(
-              label + ':',
+              '$label:',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 14.sp,

@@ -1,6 +1,4 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:typed_data';
-import 'dart:io' if (dart.library.html) 'dart:html' as html;
 
 class PlatformFile {
   final String name;

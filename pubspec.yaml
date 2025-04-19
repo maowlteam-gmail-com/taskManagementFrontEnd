@@ -43,6 +43,7 @@ dependencies:
   get_storage: ^2.1.1
   intl: ^0.20.2
   file_picker: ^10.1.2
+  flutter_dotenv: ^5.2.1
 
 dev_dependencies:
   flutter_test:
@@ -68,23 +69,8 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - assets/images/pexels-cottonbro-4709364.jpg
-    - assets/images/pexels-jamalyahyayev-12863114.jpg
-    - assets/images/pexels-mikhail-nilov-9242925.jpg
-    - assets/images/pexels-pixabay-163125.jpg
-    - assets/images/pexels-thisisengineering-19895784.jpg
-    - assets/images/pexels-vanessa-loring-7869034.jpg
-    - assets/images/pexels-tanfeez-10699355.jpg
-    - assets/images/Electronics.png
-    - assets/images/Electrical.png
-    - assets/images/Services.png
-    - assets/images/Laptop Coding.png
-    - assets/images/embedded-system-3758538-3134263 1.png
-    - assets/images/Done.png
-    - assets/images/pexels-pixabay-210158.jpg
-    - assets/images/Frame 52.png
-    - assets/images/M02_01_ PNG_W.png
-    - assets/images/M02_01_ PNG.png
+    - assets/images/
+    - assets/.env
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
 

@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart'; 
+import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart'; 
 import 'package:get/get.dart';
 import 'package:dio/dio.dart';
 import 'package:get_storage/get_storage.dart';
@@ -53,7 +54,7 @@ class CreateTeamController extends GetxController {
     print("Sending request to create employee: $requestData");
 
     final response = await _dio.post(
-      'http://localhost:5001/api/createEmployee',
+      '${dotenv.env['BASE_URL']}/api/createEmployee',
       data: requestData,
       options: Options(
         headers: {

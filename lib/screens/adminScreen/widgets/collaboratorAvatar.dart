@@ -7,11 +7,11 @@ class CollaboratorAvatar extends StatefulWidget {
   final Color? backgroundColor;
 
   const CollaboratorAvatar({
-    Key? key,
+    super.key,
     required this.name,
     this.size = 36,
     this.backgroundColor,
-  }) : super(key: key);
+  });
 
   @override
   State<CollaboratorAvatar> createState() => _CollaboratorAvatarState();

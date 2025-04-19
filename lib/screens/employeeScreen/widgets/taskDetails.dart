@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -6,15 +7,14 @@ import 'package:dio/dio.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:maowl/screens/employeeScreen/widgets/employeeProjects.dart';
 import 'package:maowl/screens/employeeScreen/widgets/taskHistory.dart';
-import 'package:maowl/screens/employeeScreen/widgets/taskUpdateScreen.dart';
 
 class TaskDetailScreen extends StatefulWidget {
   final Map<String, dynamic> task;
 
   const TaskDetailScreen({
-    Key? key,
+    super.key,
     required this.task,
-  }) : super(key: key);
+  });
 
   @override
   State<TaskDetailScreen> createState() => _TaskDetailScreenState();
@@ -99,7 +99,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       }
 
       final response = await _dio.get(
-        'http://localhost:5001/api/tasks/$taskId',
+        '${dotenv.env['BASE_URL']}/api/tasks/$taskId',
         options: Options(
           headers: {
             "Content-Type": "application/json",
@@ -166,6 +166,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       }
     }
   }
+
 
   void _navigateToUpdateScreen() async {
   if (!mounted) return;
@@ -250,6 +251,37 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
           backgroundColor: Colors.black,
           foregroundColor: Colors.white,
           actions: [
+            Container(
+  margin: EdgeInsets.only(right: 100),
+  width: 150,
+  decoration: BoxDecoration(
+    color: getStatusColor(status),
+    borderRadius: BorderRadius.circular(2),
+  ),
+  child: Column(
+    mainAxisAlignment: MainAxisAlignment.center,
+    crossAxisAlignment: CrossAxisAlignment.center,
+    children: [
+      SizedBox(height: 4.h),
+      Container(
+        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.white, width: 1.5),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Text(
+          status,
+          style: TextStyle(
+            fontSize: 14.sp,
+            fontWeight: FontWeight.w500,
+            color: Colors.white
+          ),
+        ),
+      ),
+      SizedBox(height: 4.h),
+    ],
+  ),
+),
             IconButton(
               icon: const Icon(Icons.update),
               tooltip: 'Update Today\'s Progress',
@@ -341,8 +373,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
           onPressed: _navigateToUpdateScreen,
           backgroundColor: Colors.black,
           foregroundColor: Colors.white,
-          child: const Icon(Icons.add),
           tooltip: 'Update Today\'s Progress',
+          child: const Icon(Icons.add),
         ),
       );
     } catch (e) {

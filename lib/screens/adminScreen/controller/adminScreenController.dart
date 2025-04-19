@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:dio/dio.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:maowl/screens/siteScreen/views/siteScreen.dart';
 
 class AdminScreenController extends GetxController {
   // Observable selected option
@@ -65,7 +65,7 @@ class AdminScreenController extends GetxController {
 
       print('token : $token');
       final response = await _dio.get(
-        'http://localhost:5001/api/getEmployees',
+        '${dotenv.env['BASE_URL']}/api/getEmployees',
         options: Options(
           headers: {
             "Content-Type": "application/json",
@@ -125,7 +125,7 @@ class AdminScreenController extends GetxController {
 
       print('token : $token');
       final response = await _dio.put(
-        'http://localhost:5001/api/updateEmployee/$employeeId',
+        '${dotenv.env['BASE_URL']}/api/updateEmployee/$employeeId',
         data: {'password': newPassword},
         options: Options(
           headers: {
@@ -192,7 +192,7 @@ class AdminScreenController extends GetxController {
       }
 
       final response = await _dio.delete(
-        'http://localhost:5001/api/deleteEmployee/$employeeId',
+        '${dotenv.env['BASE_URL']}/api/deleteEmployee/$employeeId',
         options: Options(
           headers: {
             "Content-Type": "application/json",
@@ -263,7 +263,7 @@ class AdminScreenController extends GetxController {
     }
 
     final response = await _dio.post(
-      'http://localhost:5001/api/logout',
+      '${dotenv.env['BASE_URL']}/api/logout',
       options: Options(
         headers: {
           "Content-Type": "application/json",

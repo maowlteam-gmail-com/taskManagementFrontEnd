@@ -111,6 +111,8 @@ class EmployeeScreen extends StatelessWidget {
 }
 
 class TeamList extends StatelessWidget {
+  const TeamList({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Center(

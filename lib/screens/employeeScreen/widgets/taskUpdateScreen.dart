@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:dio/dio.dart';
@@ -9,9 +10,9 @@ class TaskUpdateScreen extends StatefulWidget {
   final Map<String, dynamic> task;
 
   const TaskUpdateScreen({
-    Key? key,
+    super.key,
     required this.task,
-  }) : super(key: key);
+  });
 
   @override
   State<TaskUpdateScreen> createState() => _TaskUpdateScreenState();
@@ -58,7 +59,7 @@ class _TaskUpdateScreenState extends State<TaskUpdateScreen> {
 
       final dio = Dio();
       final response = await dio.get(
-        'http://localhost:5001/api/getEmployees',
+        '${dotenv.env['BASE_URL']}/api/getEmployees',
         options: Options(
           headers: {
             "Content-Type": "application/json",
@@ -103,7 +104,7 @@ class _TaskUpdateScreenState extends State<TaskUpdateScreen> {
     try {
       final dio = Dio();
       final response = await dio.patch(
-        'http://localhost:5001/api/tasks/addCollaborator/$taskId',
+        '${dotenv.env['BASE_URL']}/api/tasks/addCollaborator/$taskId',
         options: Options(
           headers: {
             "Content-Type": "application/json",
@@ -258,6 +259,20 @@ class _TaskUpdateScreenState extends State<TaskUpdateScreen> {
       }
     }
   }
+  Color getStatusColor(String status) {
+  switch (status.toLowerCase()) {
+    case 'pending':
+      return Colors.orange;
+    case 'in_progress':
+      return Colors.blue;
+    case 'completed':
+      return Colors.green;
+    case 'cancelled':
+      return Colors.red;
+    default:
+      return Colors.grey;
+  }
+}
 
   void _showAddCollaboratorDialog() {
     Get.dialog(
@@ -265,7 +280,7 @@ class _TaskUpdateScreenState extends State<TaskUpdateScreen> {
         title: Text('Add Collaborator'),
         content: _isLoadingEmployees
             ? Center(child: CircularProgressIndicator())
-            : Container(
+            : SizedBox(
                 width: double.maxFinite,
                 height: 300.h,
                 child: _employees.isEmpty
@@ -353,35 +368,40 @@ class _TaskUpdateScreenState extends State<TaskUpdateScreen> {
                     borderRadius: BorderRadius.circular(12.sp),
                     border: Border.all(color: Colors.grey[300]!),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
                     children: [
-                      Text(
-                        taskName,
-                        style: TextStyle(
-                          fontSize: 18.sp,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white
-                        ),
-                      ),
-                      SizedBox(height: 8.h),
-                      Row(
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(
-                            Icons.calendar_today,
-                            size: 16.sp,
-                            color: Colors.white,
-                          ),
-                          SizedBox(width: 8.w),
                           Text(
-                            'Today: $today',
+                            taskName,
                             style: TextStyle(
-                              fontSize: 14.sp,
-                              color: Colors.white,
+                              fontSize: 18.sp,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white
                             ),
+                          ),
+                          SizedBox(height: 8.h),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.calendar_today,
+                                size: 16.sp,
+                                color: Colors.white,
+                              ),
+                              SizedBox(width: 8.w),
+                              Text(
+                                'Today: $today',
+                                style: TextStyle(
+                                  fontSize: 14.sp,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
+                      
                     ],
                   ),
                 ),

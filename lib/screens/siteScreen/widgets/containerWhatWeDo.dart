@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class CustomContainerWidget extends StatelessWidget {
-  const CustomContainerWidget({Key? key}) : super(key: key);
+  const CustomContainerWidget({super.key});
 
   @override
   Widget build(BuildContext context) {

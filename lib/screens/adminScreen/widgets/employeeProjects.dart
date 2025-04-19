@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:dio/dio.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:intl/intl.dart';
 import 'package:maowl/screens/adminScreen/widgets/collaboratorAvatar.dart';
-import 'package:maowl/screens/adminScreen/widgets/taskHistoryView.dart';
 
 class EmployeeProjects extends StatefulWidget {
   final Map<String, dynamic> employee;
   final Function onBack;
 
   const EmployeeProjects({
-    Key? key,
+    super.key,
     required this.employee,
     required this.onBack,
-  }) : super(key: key);
+  });
 
   @override
   State<EmployeeProjects> createState() => _EmployeeProjectsState();
@@ -55,7 +55,7 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
       }
 
       final response = await _dio.get(
-        'http://localhost:5001/api/tasks/getTaskByUserId/$employeeId',
+        '${dotenv.env['BASE_URL']}/api/tasks/getTaskByUserId/$employeeId',
         options: Options(
           headers: {
             "Content-Type": "application/json",
@@ -97,7 +97,7 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
       }
 
       final response = await _dio.get(
-        'http://localhost:5001/api/tasks/history/$taskId',
+        '${dotenv.env['BASE_URL']}/api/tasks/history/$taskId',
         options: Options(
           headers: {
             "Content-Type": "application/json",
@@ -216,7 +216,7 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
       }
 
       final response = await _dio.delete(
-        'http://localhost:5001/api/tasks/deleteTask/$taskId',
+        '${dotenv.env['BASE_URL']}/api/tasks/deleteTask/$taskId',
         options: Options(
           headers: {
             "Content-Type": "application/json",
@@ -268,16 +268,16 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
         actions: [
           TextButton(
             onPressed: () => Get.back(),
-            child: Text('Cancel'),
             style: TextButton.styleFrom(foregroundColor: Colors.grey[800]),
+            child: Text('Cancel'),
           ),
           TextButton(
             onPressed: () {
               Get.back(); // Close dialog
               deleteTask(taskId);
             },
-            child: Text('Delete'),
             style: TextButton.styleFrom(foregroundColor: Colors.black),
+            child: Text('Delete'),
           ),
         ],
       ),
@@ -389,11 +389,11 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
                     ),
                     ElevatedButton(
                       onPressed: fetchTasks,
-                      child: Text('Retry'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.black,
                         foregroundColor: Colors.white,
                       ),
+                      child: Text('Retry'),
                     ),
                   ],
                 ),
@@ -1138,8 +1138,7 @@ return InkWell(
                                       (context, index) => Divider(height: 24.h),
                                   itemBuilder: (context, index) {
                                     final workDetail =
-                                        workDetails[index]
-                                            as Map<String, dynamic>;
+                                        workDetails[index];
                                     final description =
                                         workDetail['description'] ??
                                         'No description';

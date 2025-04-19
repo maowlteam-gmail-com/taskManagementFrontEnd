@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:maowl/screens/siteScreen/widgets/customText.dart';
@@ -8,10 +7,10 @@ class CustomServiceContainer extends StatelessWidget {
   final String text;
 
   const CustomServiceContainer({
-    Key? key,
+    super.key,
     required this.items,
     required this.text,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +54,7 @@ class CustomServiceContainer extends StatelessWidget {
                     imagePath: item['imagePath'], // Use imagePath instead of icon
                   ),
                 );
-              }).toList(),
+              }),
               
                 ],
               ),

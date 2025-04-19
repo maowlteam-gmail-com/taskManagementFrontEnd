@@ -1,6 +1,7 @@
 import 'dart:math' as Math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:dio/dio.dart';
 import 'package:get_storage/get_storage.dart';
@@ -67,14 +68,14 @@ class TaskController extends GetxController {
           });
           selectedEmployee.value = employees.first;
           selectedEmployeeId.value = employeeIds[employees.first];
-          print("Added test employees: ${employees}");
+          print("Added test employees: $employees");
         }
         return;
       }
       
-      print("Making API request to http://localhost:5001/api/getEmployees");
+      print("Making API request to ${dotenv.env['BASE_URL']}/api/getEmployees");
       var response = await Dio().get(
-        'http://localhost:5001/api/getEmployees',
+        '${dotenv.env['BASE_URL']}/api/getEmployees',
         options: Options(
           headers: {
             "Content-Type": "application/json",
@@ -114,7 +115,7 @@ class TaskController extends GetxController {
               selectedEmployee.value = names.first;
               selectedEmployeeId.value = idMap[names.first];
             }
-            print("Employees list updated with API data: ${employees}");
+            print("Employees list updated with API data: $employees");
           } else {
             print("API returned empty list of names");
           }
@@ -145,7 +146,7 @@ class TaskController extends GetxController {
                 selectedEmployee.value = names.first;
                 selectedEmployeeId.value = idMap[names.first];
               }
-              print("Employees list updated: ${employees}");
+              print("Employees list updated: $employees");
             }
           }
         }
@@ -163,7 +164,7 @@ class TaskController extends GetxController {
         });
         selectedEmployee.value = employees.first;
         selectedEmployeeId.value = employeeIds[employees.first];
-        print("Using test data after error: ${employees}");
+        print("Using test data after error: $employees");
       }
     }
   }
@@ -220,7 +221,7 @@ class TaskController extends GetxController {
       
       // Make API call
       var response = await Dio().post(
-        'http://localhost:5001/api/tasks/createTask',
+        '${dotenv.env['BASE_URL']}/api/tasks/createTask',
         data: taskData,
         options: Options(
           headers: {

@@ -8,9 +8,9 @@ class TaskHistoryItem extends StatelessWidget {
   final Map<String, dynamic> historyItem;
 
   const TaskHistoryItem({
-    Key? key,
+    super.key,
     required this.historyItem,
-  }) : super(key: key);
+  });
 
   String formatDateTime(String? dateString) {
     if (dateString == null) return 'N/A';
@@ -261,7 +261,7 @@ class TaskHistoryItem extends StatelessWidget {
                 ],
               ),
             ),
-          )).toList(),
+          )),
         ],
       ),
     );

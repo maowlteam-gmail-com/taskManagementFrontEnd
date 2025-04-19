@@ -7,10 +7,10 @@ class TaskHistoryItemWidget extends StatelessWidget {
   final bool isLast;
 
   const TaskHistoryItemWidget({
-    Key? key,
+    super.key,
     required this.workDetail,
     this.isLast = false,
-  }) : super(key: key);
+  });
 
   String formatDate(String? dateString) {
     if (dateString == null) return 'N/A';

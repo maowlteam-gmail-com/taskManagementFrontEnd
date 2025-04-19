@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:dio/dio.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:intl/intl.dart';
-import 'package:maowl/screens/employeeScreen/widgets/taskDetails.dart';
 
 class EmployeeProjects extends StatefulWidget {
-  const EmployeeProjects({Key? key}) : super(key: key);
+  const EmployeeProjects({super.key});
 
   @override
   State<EmployeeProjects> createState() => _EmployeeProjectsState();
@@ -45,10 +45,10 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
         return;
       }
 
-      print("Making API request to: http://localhost:5001/api/tasks/myTasks");
+      print("Making API request to: ${dotenv.env['BASE_URL']}/api/tasks/myTasks");
 
       final response = await _dio.get(
-        'http://localhost:5001/api/tasks/myTasks',
+        '${dotenv.env['BASE_URL']}/api/tasks/myTasks',
         options: Options(
           headers: {
             "Content-Type": "application/json",
@@ -119,7 +119,7 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
               "Connection timeout. Please check your internet connection.";
         } else if (e.type == DioExceptionType.connectionError) {
           errorMessage.value =
-              "Connection error. Is the server running at http://localhost:5001?";
+              "Connection error. Is the server running at ${dotenv.env['BASE_URL']}?";
         } else {
           errorMessage.value = "Error fetching tasks: ${e.message}";
         }
@@ -323,11 +323,11 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
           SizedBox(height: 16),
           ElevatedButton(
             onPressed: fetchTasks,
-            child: Text('Retry'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.black,
               foregroundColor: Colors.white,
             ),
+            child: Text('Retry'),
           ),
         ],
       ),
@@ -362,7 +362,6 @@ Widget _buildTasksGrid() {
         if (index >= tasks.length) return Container();
         
         final task = tasks[index];
-        if (task == null) return Container();
         
         final projectName = task['project_name'] ?? 'Unknown Project';
         final taskName = task['task_name'] ?? 'Unnamed Task';

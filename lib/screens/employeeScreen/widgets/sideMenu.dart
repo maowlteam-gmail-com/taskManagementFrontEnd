@@ -171,12 +171,12 @@ class SideMenu extends StatelessWidget {
                           actions: [
                             TextButton(
                               onPressed: () => Get.back(),
+                              style: TextButton.styleFrom(
+                                foregroundColor: Colors.black,
+                              ),
                               child: Text(
                                 'Cancel',
                                 style: TextStyle(color: Colors.black54),
-                              ),
-                              style: TextButton.styleFrom(
-                                foregroundColor: Colors.black,
                               ),
                             ),
                             ElevatedButton(
@@ -185,7 +185,6 @@ class SideMenu extends StatelessWidget {
                                 controller.logout();
                                 Get.back();
                               },
-                              child: Text('Logout'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.black,
                                 foregroundColor: Colors.white,
@@ -194,6 +193,7 @@ class SideMenu extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(4.sp),
                                 ),
                               ),
+                              child: Text('Logout'),
                             ),
                           ],
                           actionsPadding: EdgeInsets.symmetric(

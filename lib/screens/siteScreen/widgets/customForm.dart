@@ -9,7 +9,7 @@ import 'package:maowl/screens/siteScreen/controllers/requirementController.dart'
 import 'package:maowl/screens/siteScreen/widgets/customButtom.dart';
 
 class CustomFormWidget extends StatelessWidget {
-  CustomFormWidget({Key? key}) : super(key: key);
+  CustomFormWidget({super.key});
 
   final RequirementController controller = Get.put(RequirementController());
 

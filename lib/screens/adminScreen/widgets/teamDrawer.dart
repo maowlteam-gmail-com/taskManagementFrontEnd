@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import 'package:maowl/screens/adminScreen/controller/adminScreenController.dart';
 
 class TeamDrawer extends StatelessWidget {
-  const TeamDrawer({Key? key}) : super(key: key);
+  const TeamDrawer({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -78,11 +78,11 @@ class TeamDrawer extends StatelessWidget {
                         SizedBox(height: 16.h),
                         ElevatedButton(
                           onPressed: () => controller.fetchEmployees(),
-                          child: Text('Retry'),
                           style: ElevatedButton.styleFrom(
                             foregroundColor: Colors.black,
                             backgroundColor: Colors.white,
                           ),
+                          child: Text('Retry'),
                         ),
                       ],
                     ),
@@ -121,9 +121,9 @@ class EmployeeListItem extends StatelessWidget {
   final Map<String, dynamic> employee;
   
   const EmployeeListItem({
-    Key? key,
+    super.key,
     required this.employee,
-  }) : super(key: key);
+  });
   
   @override
   Widget build(BuildContext context) {

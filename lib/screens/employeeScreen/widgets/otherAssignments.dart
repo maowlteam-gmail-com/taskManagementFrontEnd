@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:dio/dio.dart';
@@ -73,7 +74,7 @@ class MyAssignmentsController extends GetxController {
     try {
       final token = box.read('token');
       final response = await dio.get(
-        'http://localhost:5001/requirement/my-requirements',
+        '${dotenv.env['BASE_URL']}/requirement/my-requirements',
         options: Options(
           headers: {
             "Content-Type": "application/json",
@@ -109,7 +110,7 @@ class MyAssignmentsController extends GetxController {
     try {
       final token = box.read('token');
       final response = await dio.get(
-        'http://localhost:5001/requirement/$requirementId/download',
+        '${dotenv.env['BASE_URL']}/requirement/$requirementId/download',
         options: Options(
           headers: {
             "Authorization": "Bearer $token",
@@ -173,7 +174,7 @@ class MyAssignmentsController extends GetxController {
 class OtherAssignmentsScreen extends StatelessWidget {
   final MyAssignmentsController controller = Get.put(MyAssignmentsController());
 
-  OtherAssignmentsScreen({Key? key}) : super(key: key);
+  OtherAssignmentsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -439,7 +440,7 @@ class OtherAssignmentsScreen extends StatelessWidget {
                 ],
               ),
               SizedBox(height: 20.h),
-              Container(
+              SizedBox(
                 width: 400.w,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -457,7 +458,7 @@ class OtherAssignmentsScreen extends StatelessWidget {
               // Download PDF button
               if (requirement.pdfFile.isNotEmpty)
                 Obx(() => controller.isDownloading.value 
-                  ? Container(
+                  ? SizedBox(
                       width: 200.w,
                       child: Column(
                         children: [
@@ -506,7 +507,7 @@ class OtherAssignmentsScreen extends StatelessWidget {
           SizedBox(
             width: 100.w,
             child: Text(
-              label + ':',
+              '$label:',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 14.sp,

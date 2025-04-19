@@ -5,7 +5,7 @@ import 'package:maowl/screens/adminScreen/controller/adminScreenController.dart'
 import 'package:maowl/screens/adminScreen/widgets/employeeProjects.dart';
 
 class EmployeeList extends StatelessWidget {
-  EmployeeList({Key? key}) : super(key: key);
+  EmployeeList({super.key});
 
   final AdminScreenController controller = Get.find<AdminScreenController>();
   final RxBool isEditingPassword = false.obs;
@@ -48,12 +48,12 @@ class EmployeeList extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Get.back(),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.black,
+            ),
             child: Text(
               'Cancel',
               style: TextStyle(color: Colors.black54),
-            ),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.black,
             ),
           ),
           ElevatedButton(
@@ -61,7 +61,6 @@ class EmployeeList extends StatelessWidget {
               Get.back();
               await controller.deleteEmployee(id);
             },
-            child: Text('Delete'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.black,
               foregroundColor: Colors.white,
@@ -70,6 +69,7 @@ class EmployeeList extends StatelessWidget {
                 borderRadius: BorderRadius.circular(4.sp),
               ),
             ),
+            child: Text('Delete'),
           ),
         ],
         actionsPadding: EdgeInsets.symmetric(horizontal: 16.sp, vertical: 8.sp),
@@ -100,11 +100,11 @@ class EmployeeList extends StatelessWidget {
                 ),
                 ElevatedButton(
                   onPressed: () => controller.fetchEmployees(),
-                  child: Text('Retry'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
                     foregroundColor: Colors.white,
                   ),
+                  child: Text('Retry'),
                 ),
               ],
             ),
@@ -122,11 +122,11 @@ class EmployeeList extends StatelessWidget {
                 SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () => controller.fetchEmployees(),
-                  child: Text('Refresh'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
                     foregroundColor: Colors.white,
                   ),
+                  child: Text('Refresh'),
                 ),
               ],
             ),
@@ -281,12 +281,12 @@ class EmployeeList extends StatelessWidget {
                               controller.setSelectedEmployee(employee);
                               isViewingProjects.value = true;
                             },
-                            child: Text('View'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.black,
                               foregroundColor: Colors.white,
                               padding: EdgeInsets.symmetric(horizontal: 16.sp),
                             ),
+                            child: Text('View'),
                           ),
                         ],
                       ),

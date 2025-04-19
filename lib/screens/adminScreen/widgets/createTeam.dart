@@ -8,6 +8,8 @@ import 'package:maowl/screens/siteScreen/widgets/customButtom.dart';
 class CreateTeamWidget extends StatelessWidget {
   final CreateTeamController controller = Get.put(CreateTeamController());
 
+   CreateTeamWidget({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Center(

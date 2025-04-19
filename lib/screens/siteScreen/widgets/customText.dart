@@ -5,8 +5,7 @@ class CustomText extends StatelessWidget {
   final String text1;
   final String imagePath;
 
-   const CustomText({Key? key, required this.text1, required this.imagePath, })
-      : super(key: key);
+   const CustomText({super.key, required this.text1, required this.imagePath, });
 
   @override
   Widget build(BuildContext context) {

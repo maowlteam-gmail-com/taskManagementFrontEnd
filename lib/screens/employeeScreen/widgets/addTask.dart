@@ -164,7 +164,7 @@ class CreateTaskContent extends StatelessWidget {
     Get.dialog(
       AlertDialog(
         title: Text('Select Employee'),
-        content: Container(
+        content: SizedBox(
           width: 300.w,
           child: SingleChildScrollView(
             child: Column(
