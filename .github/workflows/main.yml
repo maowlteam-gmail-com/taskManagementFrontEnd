@@ -69,5 +69,6 @@ jobs:
       
             echo "Pulling latest image and restarting kalgus_fe..."
             docker-compose pull kalgus_fe
-            docker-compose -p kalgus up -d
+            docker-compose down
+            docker-compose up -d
           EOF
