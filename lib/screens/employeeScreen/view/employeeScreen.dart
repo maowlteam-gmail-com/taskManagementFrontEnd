@@ -20,8 +20,8 @@ class EmployeeScreen extends StatelessWidget {
     bool isTablet = Get.width >= 600 && Get.width < 1200;
     
     // Adjusting widths for each device type
-    final double mobileMenuWidth = 80.w; // Slightly larger for mobile
-    final double tabletMenuWidth = 70.w; // Keep tablet size the same
+    final double mobileMenuWidth = 200.w; // Slightly larger for mobile
+    final double tabletMenuWidth = 80.w; // Keep tablet size the same
     final double desktopMenuWidth = 200.w; // Desktop size unchanged
     
     return Scaffold(
@@ -31,6 +31,10 @@ class EmployeeScreen extends StatelessWidget {
         ? Drawer(
           key: const Key('employee_mobile_drawer'),
             width: mobileMenuWidth,
+           
+             shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.zero,
+              ),
             child: SideMenu(
               isIconOnly: false, // Show text on mobile
               isMobileView: true, // Flag as mobile

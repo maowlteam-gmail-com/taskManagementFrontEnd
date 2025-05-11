@@ -3,13 +3,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:maowl/screens/siteScreen/controllers/loginController.dart';
 import 'package:maowl/screens/siteScreen/widgets/customButtom.dart';
+import 'package:maowl/screens/siteScreen/widgets/forgotPasswordDialog.dart';
+
 
 class LoginFormContainer extends StatelessWidget {
-   LoginFormContainer({super.key});
+  LoginFormContainer({super.key});
 
-   final LoginController controller = Get.put(LoginController());
-
-   
+  final LoginController controller = Get.put(LoginController());
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +22,7 @@ class LoginFormContainer extends StatelessWidget {
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: screenWidth),
           child: Container(
-          // height: 864.h,
+            // height: 864.h,
             width: 854.w,
             padding: EdgeInsets.all(20.w),
             decoration: BoxDecoration(
@@ -37,7 +37,7 @@ class LoginFormContainer extends StatelessWidget {
               ],
             ),
             child: Padding(
-              padding:  EdgeInsets.all(padding),
+              padding: EdgeInsets.all(padding),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -52,31 +52,51 @@ class LoginFormContainer extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: 84.h),
-                  _buildTextField('User Name', controller: controller.userController ),
+                  _buildTextField('User Name', controller: controller.userController),
                   SizedBox(height: 50.h),
-                  _buildTextField('Password', isPassword: true ,controller: controller.passwordController),
+                  Obx(() => _buildTextField(
+                        'Password',
+                        isPassword: controller.obscureText.value,
+                        controller: controller.passwordController,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            controller.obscureText.value
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            color: Colors.black54,
+                          ),
+                          onPressed: () => controller.togglePasswordVisbility(),
+                        ),
+                      )),
                   SizedBox(height: 50.h),
                   Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                          onPressed: () {},
-                          child: Text(
-                            'Forgot Password ?',
-                            style: TextStyle(
-                                color: Colors.black, fontWeight: FontWeight.bold),
-                          ))),
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () {
+                        // Show forgot password dialog when clicked
+                        ForgotPasswordDialogs.showRequestOTPDialog();
+                      },
+                      child: Text(
+                        'Forgot Password ?',
+                        style: TextStyle(
+                            color: Colors.black, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
                   SizedBox(
                     height: 50.h,
                   ),
                   Center(
-                    child:
-                    Obx(() => CustomButton(
-                      text: 'Submit',
-                      onPressed: controller.isLoading.value ? null : () {
-                        controller.login();
-                      },
-                    ), )
-                    
+                    child: Obx(
+                      () => CustomButton(
+                        text: 'Submit',
+                        onPressed: controller.isLoading.value
+                            ? null
+                            : () {
+                                controller.login();
+                              },
+                      ),
+                    ),
                   ),
                   SizedBox(
                     height: 50.h,
@@ -88,9 +108,7 @@ class LoginFormContainer extends StatelessWidget {
                         child: Text(
                           'Create Your Account',
                           style: TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold
-                            ),
+                              color: Colors.black, fontWeight: FontWeight.bold),
                         )),
                   )
                 ],
@@ -102,7 +120,10 @@ class LoginFormContainer extends StatelessWidget {
     );
   }
 
-  Widget _buildTextField(String label,  {bool isPassword = false, required TextEditingController controller }) {
+  Widget _buildTextField(String label,
+      {bool isPassword = false,
+      required TextEditingController controller,
+      Widget? suffixIcon}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -122,6 +143,7 @@ class LoginFormContainer extends StatelessWidget {
             focusedBorder: const UnderlineInputBorder(
               borderSide: BorderSide(color: Colors.black),
             ),
+            suffixIcon: suffixIcon,
           ),
         ),
       ],

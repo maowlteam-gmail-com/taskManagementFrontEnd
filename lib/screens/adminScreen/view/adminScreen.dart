@@ -19,8 +19,8 @@ class AdminScreen extends StatelessWidget {
     bool isTablet = Get.width >= 600 && Get.width < 1200;
 
     // Adjusting widths for each device type
-    final double mobileMenuWidth = 80.w; // Slightly larger for mobile
-    final double tabletMenuWidth = 70.w; // Keep tablet size the same
+    final double mobileMenuWidth = 200.w; // Slightly larger for mobile
+    final double tabletMenuWidth = 80.w; // Keep tablet size the same
     final double desktopMenuWidth = 200.w; // Desktop size unchanged
 
     return Scaffold(
@@ -29,8 +29,11 @@ class AdminScreen extends StatelessWidget {
       drawer:
           isMobile
               ? Drawer(
-                 key: const Key('mobile_drawer'), 
+                key: const Key('mobile_drawer'),
                 width: mobileMenuWidth,
+                 shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.zero,
+              ),
                 child: SideMenu(
                   isIconOnly: false, // Show text on mobile
                   isMobileView: true, // Flag as mobile
@@ -73,18 +76,16 @@ class AdminScreen extends StatelessWidget {
                       child: Obx(() {
                         switch (controller.selectedOption.value) {
                           case "Home":
-                             return HomeScreen();
+                            return HomeScreen();
                           case "Show Team":
                             return EmployeeList();
                           case "Add Team":
                             return CreateTeamWidget();
                           case "Create Task":
                             return CreateTaskContent();
-                          
+
                           default:
-                            return Center(
-                              child: HomeScreen()
-                            );
+                            return Center(child: HomeScreen());
                         }
                       }),
                     ),
@@ -98,5 +99,3 @@ class AdminScreen extends StatelessWidget {
     );
   }
 }
-
-

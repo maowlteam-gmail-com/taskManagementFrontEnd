@@ -9,8 +9,10 @@ class SiteScreenController extends GetxController {
   late Timer timer;
   int currentIndex = 0;
   bool isAnimating = false;
+
+  var isMenuOpen = false.obs;
   
-  // ScrollController for auto-scrolling images
+  // ScrollController for auto-scrolling imagesz
   final ScrollController scrollController = ScrollController();
   Timer? autoScrollTimer;
   
@@ -28,7 +30,13 @@ class SiteScreenController extends GetxController {
     scrollController.dispose();
     super.onClose();
   }
+  void toggleMenu() {
+    isMenuOpen.value = !isMenuOpen.value;
+  }
   
+  void closeMenu() {
+    isMenuOpen.value = false;
+  }
   // Auto-scroll images from left to right continuously
   void startAutoScroll() {
     // Wait for the widget to be built and laid out

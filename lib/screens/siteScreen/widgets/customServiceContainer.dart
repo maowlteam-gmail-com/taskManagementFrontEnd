@@ -6,7 +6,7 @@ class CustomServiceContainer extends StatelessWidget {
   final List<Map<String, dynamic>> items;
   final String text;
 
-  const CustomServiceContainer({
+  const  CustomServiceContainer({
     super.key,
     required this.items,
     required this.text,
@@ -40,7 +40,6 @@ class CustomServiceContainer extends StatelessWidget {
               ),
             ),
             SizedBox(height: 20.h), // Space below the title
-
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -59,7 +58,7 @@ class CustomServiceContainer extends StatelessWidget {
                 ],
               ),
             )
-
+    
             // CustomText items
             // ...items.map((item) {
             //   return Padding(

@@ -311,7 +311,6 @@ class HomeController extends GetxController {
     }
   }
 }
-
 class HomeScreen extends StatelessWidget {
   final HomeController controller = Get.put(HomeController());
 
@@ -382,459 +381,480 @@ class HomeScreen extends StatelessWidget {
         if (controller.requirements.isEmpty) {
           return Center(child: Text('No requirements found'));
         }
-        
-        return Column(
-          children: [
-            // Table Header
-            Container(
-              padding: EdgeInsets.symmetric(vertical: 12.h),
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(color: Colors.grey.shade300),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      'Name',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16.sp,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      'Email',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16.sp,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      'Phone',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16.sp,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 3,
-                    child: Text(
-                      'Message',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16.sp,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      'Date',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16.sp,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      'Status',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16.sp,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      'Actions',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16.sp,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+
+        // Use LayoutBuilder to determine screen size
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            // Check if we're on a small screen (mobile view)
+            bool isMobileView = constraints.maxWidth < 600;
             
-            // Table Body
-            Expanded(
-              child: ListView.builder(
-                itemCount: controller.requirements.length,
-                itemBuilder: (context, index) {
-                  final requirement = controller.requirements[index];
-                  return Container(
-                    padding: EdgeInsets.symmetric(vertical: 12.h),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(color: Colors.grey.shade200),
-                      ),
+            return Column(
+              children: [
+                // Table Header
+                Container(
+                  padding: EdgeInsets.symmetric(vertical: 12.h),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey.shade300),
                     ),
-                    child: Row(
-                      children: [
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          'Name',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16.sp,
+                          ),
+                        ),
+                      ),
+                      if (!isMobileView) ...[
                         Expanded(
                           flex: 2,
                           child: Text(
-                            requirement.name,
-                            style: TextStyle(fontSize: 14.sp),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 2,
-                          child: Text(
-                            requirement.email,
-                            style: TextStyle(fontSize: 14.sp),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 2,
-                          child: Text(
-                            requirement.phone,
-                            style: TextStyle(fontSize: 14.sp),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 3,
-                          child: Text(
-                            requirement.message,
-                            style: TextStyle(fontSize: 14.sp),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Expanded(
-                          flex: 2,
-                          child: Text(
-                            DateFormat('dd/MM/yyyy').format(requirement.createdAt),
-                            style: TextStyle(fontSize: 14.sp),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 2,
-                          child: Container(
-                            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                            decoration: BoxDecoration(
-                              color: requirement.status == 'pending' 
-                                  ? Colors.orange.shade100 
-                                  : Colors.green.shade100,
-                              borderRadius: BorderRadius.circular(4.r),
-                            ),
-                            child: Text(
-                              requirement.status.capitalizeFirst!,
-                              style: TextStyle(
-                                fontSize: 12.sp,
-                                color: requirement.status == 'pending' 
-                                    ? Colors.orange.shade800 
-                                    : Colors.green.shade800,
-                              ),
-                              textAlign: TextAlign.center,
+                            'Email',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16.sp,
                             ),
                           ),
                         ),
                         Expanded(
                           flex: 2,
-                          child: Center(
-                            child: ElevatedButton(
-                              onPressed: () {
-                                _showRequirementDetails(requirement);
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.black,
-                                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
-                                minimumSize: Size(40.w, 30.h),
-                              ),
-                              child: Text(
-                                'View',
-                                style: TextStyle(
-                                  fontSize: 12.sp,
-                                  color: Colors.white,
-                                ),
-                              ),
+                          child: Text(
+                            'Phone',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16.sp,
                             ),
                           ),
                         ),
                       ],
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
+                      Expanded(
+                        flex: isMobileView ? 3 : 3,
+                        child: Text(
+                          'Message',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16.sp,
+                          ),
+                        ),
+                      ),
+                      if (!isMobileView)
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            'Date',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16.sp,
+                            ),
+                          ),
+                        ),
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          'Status',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16.sp,
+                          ), 
+                        ),
+                      ),
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          'Actions',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16.sp,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Table Body
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: controller.requirements.length,
+                    itemBuilder: (context, index) {
+                      final requirement = controller.requirements[index];
+                      return Container(
+                        padding: EdgeInsets.symmetric(vertical: 12.h),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(color: Colors.grey.shade200),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              flex: 2,
+                              child: Text(
+                                requirement.name,
+                                style: TextStyle(fontSize: isMobileView ? 16.sp : 14.sp),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (!isMobileView) ...[
+                              Expanded(
+                                flex: 2,
+                                child: Text(
+                                  requirement.email,
+                                  style: TextStyle(fontSize: 14.sp),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              Expanded(
+                                flex: 2,
+                                child: Text(
+                                  requirement.phone,
+                                  style: TextStyle(fontSize: 14.sp),
+                                ),
+                              ),
+                            ],
+                            Expanded(
+                              flex: isMobileView ? 3 : 3,
+                              child: Text(
+                                requirement.message,
+                                style: TextStyle(fontSize: isMobileView ? 16.sp : 14.sp),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (!isMobileView)
+                              Expanded(
+                                flex: 2,
+                                child: Text(
+                                  DateFormat('dd/MM/yyyy').format(requirement.createdAt),
+                                  style: TextStyle(fontSize: 14.sp),
+                                ),
+                              ),
+                            Expanded(
+                              flex: 2,
+                              child: Container(
+                                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                                decoration: BoxDecoration(
+                                  color: requirement.status == 'pending' 
+                                      ? Colors.orange.shade100 
+                                      : Colors.green.shade100,
+                                  borderRadius: BorderRadius.circular(4.r),
+                                ),
+                                child: Text(
+                                  requirement.status.capitalizeFirst!,
+                                  style: TextStyle(
+                                    fontSize: 12.sp,
+                                    color: requirement.status == 'pending' 
+                                        ? Colors.orange.shade800 
+                                        : Colors.green.shade800,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              flex: 2,
+                              child: Center(
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    _showRequirementDetails(requirement);
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.black,
+                                    padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+                                    minimumSize: Size(40.w, 30.h),
+                                  ),
+                                  child: Text(
+                                    'View',
+                                    style: TextStyle(
+                                      fontSize: 12.sp,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          }
         );
       }),
     );
   }
 
- void _showRequirementDetails(RequirementModel requirement) {
-  final controller = Get.find<HomeController>();
-  
-  // Fetch employees when opening the dialog
-  controller.fetchEmployees();
-  
-  Get.dialog(
-    Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16.r),
-      ),
-      child: Container(
-        width: 500.w,
-        padding: EdgeInsets.all(20.r),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Requirement Details',
-                  style: TextStyle(
-                    fontSize: 20.sp,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.close),
-                  onPressed: () => Get.back(),
-                ),
-              ],
-            ),
-            SizedBox(height: 20.h),
-            SizedBox(
-              width: 400.w,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _detailRow('Name', requirement.name),
-                  _detailRow('Email', requirement.email),
-                  _detailRow('Phone', requirement.phone),
-                  _detailRow('Status', requirement.status.capitalizeFirst!),
-                  _detailRow('Date', DateFormat('dd/MM/yyyy HH:mm').format(requirement.createdAt)),
-                  _detailRow('Message', requirement.message),
-                  
-                  // Show assigned employee if any
-                 if (requirement.assignedTo != null && requirement.assignedTo!.containsKey('username'))
-  _detailRow('Assigned To', requirement.assignedTo!['username']),
-                ],
-              ),
-            ),
-            SizedBox(height: 20.h),
-            
-            // Action buttons in a centered row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (requirement.pdfFile.isNotEmpty)
-                  Obx(() => controller.isDownloading.value 
-                    ? SizedBox(
-                        width: 200.w,
-                        child: Column(
-                          children: [
-                            LinearProgressIndicator(
-                              value: controller.downloadProgress.value,
-                              backgroundColor: Colors.grey[300],
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
-                            ),
-                            SizedBox(height: 8.h),
-                            Text(
-                              'Downloading: ${(controller.downloadProgress.value * 100).toStringAsFixed(0)}%',
-                              style: TextStyle(fontSize: 12.sp),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ElevatedButton.icon(
-                        onPressed: () {
-                          controller.downloadPdf(
-                            requirement.id, 
-                            requirement.pdfFile,
-                          );
-                        },
-                        icon: Icon(Icons.file_download),
-                        label: Text('Download PDF'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                  ),
-                SizedBox(width: 12.w),
-                if (requirement.status == 'pending')
-                  Obx(() => controller.isAssigning.value
-                    ? ElevatedButton.icon(
-                        onPressed: null,
-                        icon: SizedBox(
-                          height: 12.h,
-                          width: 12.w,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        ),
-                        label: Text('Processing...'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
-                          foregroundColor: Colors.white,
-                        ),
-                      )
-                    : ElevatedButton.icon(
-                        onPressed: () {
-                          _showAssignDialog(requirement.id);
-                        },
-                        icon: Icon(Icons.assignment_ind),
-                        label: Text('Assign'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                  ),
-              ],
-            ),
-            SizedBox(height: 10.h),
-          ],
+  void _showRequirementDetails(RequirementModel requirement) {
+    final controller = Get.find<HomeController>();
+    
+    // Fetch employees when opening the dialog
+    controller.fetchEmployees();
+    
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.r),
         ),
-      ),
-    ),
-  );
-}
-void _showAssignDialog(String requirementId) {
-  final controller = Get.find<HomeController>();
-  String? selectedEmployeeId;
-  
-  Get.dialog(
-    Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16.r),
-      ),
-      child: Container(
-        width: 400.w,
-        padding: EdgeInsets.all(20.r),
-        child: Obx(() {
-          if (controller.isLoadingEmployees.value) {
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16.h),
-                Text('Loading employees...'),
-              ],
-            );
-          }
-          
-          if (controller.employees.isEmpty) {
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('No employees found'),
-                SizedBox(height: 16.h),
-                ElevatedButton(
-                  onPressed: () => Get.back(),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: Text('Close'),
-                ),
-              ],
-            );
-          }
-          
-          return StatefulBuilder(
-            builder: (context, setState) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+        child: Container(
+          width: 500.w,
+          padding: EdgeInsets.all(20.r),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Select Employee to Assign',
+                    textAlign: TextAlign.center,
+                    'Requirement Details',
                     style: TextStyle(
-                      fontSize: 18.sp,
+                      fontSize: 20.sp,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(height: 20.h),
-                  
-                  // Employee dropdown - updated to use username instead of name and email
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade300),
-                      borderRadius: BorderRadius.circular(8.r),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        hint: Text('Select an employee'),
-                        value: selectedEmployeeId,
-                        isExpanded: true,
-                        items: controller.employees.map((employee) {
-                          return DropdownMenuItem<String>(
-                            value: employee.id,
-                            child: Text(employee.username),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            selectedEmployeeId = value;
-                          });
-                        },
-                      ),
-                    ),
+                  IconButton(
+                    icon: Icon(Icons.close),
+                    onPressed: () => Get.back(),
                   ),
-                  
-                  SizedBox(height: 24.h),
-                  
-                  // Action buttons
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => Get.back(),
-                        child: Text('Cancel', style: TextStyle(color: Colors.black),),
-                      ),
-                      SizedBox(width: 12.w),
-                      ElevatedButton(
-                        onPressed: selectedEmployeeId == null 
-                            ? null 
-                            : () {
-                                Get.back(); // Close assign dialog
-                                controller.assignRequirement(
-                                  requirementId, 
-                                  selectedEmployeeId!,
-                                );
-                                Get.back(); // Close requirement details dialog
-                              },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
-                          foregroundColor: Colors.white,
+                ],
+              ),
+              SizedBox(height: 20.h),
+              SizedBox(
+                width: 400.w,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _detailRow('Name', requirement.name),
+                    _detailRow('Email', requirement.email),
+                    _detailRow('Phone', requirement.phone),
+                    _detailRow('Status', requirement.status.capitalizeFirst!),
+                    _detailRow('Date', DateFormat('dd/MM/yyyy HH:mm').format(requirement.createdAt)),
+                    _detailRow('Message', requirement.message),
+                    
+                    // Show assigned employee if any
+                    if (requirement.assignedTo != null && requirement.assignedTo!.containsKey('username'))
+                      _detailRow('Assigned To', requirement.assignedTo!['username']),
+                  ],
+                ),
+              ),
+              SizedBox(height: 20.h),
+              
+              // Action buttons in a centered row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (requirement.pdfFile.isNotEmpty)
+                    Obx(() => controller.isDownloading.value 
+                      ? SizedBox(
+                          width: 200.w,
+                          child: Column(
+                            children: [
+                              LinearProgressIndicator(
+                                value: controller.downloadProgress.value,
+                                backgroundColor: Colors.grey[300],
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                              ),
+                              SizedBox(height: 8.h),
+                              Text(
+                                'Downloading: ${(controller.downloadProgress.value * 100).toStringAsFixed(0)}%',
+                                style: TextStyle(fontSize: 12.sp),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ElevatedButton.icon(
+                          onPressed: () {
+                            controller.downloadPdf(
+                              requirement.id, 
+                              requirement.pdfFile,
+                            );
+                          },
+                          icon: Icon(Icons.file_download),
+                          label: Text('Download'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.black,
+                            foregroundColor: Colors.white,
+                          ),
                         ),
-                        child: Text('Assign'),
-                      ),
-                    ],
+                    ),
+                  SizedBox(width: 12.w),
+                  if (requirement.status == 'pending')
+                    Obx(() => controller.isAssigning.value
+                      ? ElevatedButton.icon(
+                          onPressed: null,
+                          icon: SizedBox(
+                            height: 12.h,
+                            width: 12.w,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          ),
+                          label: Text('Processing...'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.black,
+                            foregroundColor: Colors.white,
+                          ),
+                        )
+                      : ElevatedButton.icon(
+                          onPressed: () {
+                            _showAssignDialog(requirement.id);
+                          },
+                          icon: Icon(Icons.assignment_ind),
+                          label: Text('Assign'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.black,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                    ),
+                ],
+              ),
+              SizedBox(height: 10.h),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAssignDialog(String requirementId) {
+    final controller = Get.find<HomeController>();
+    String? selectedEmployeeId;
+    
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        child: Container(
+          width: 400.w,
+          padding: EdgeInsets.all(20.r),
+          child: Obx(() {
+            if (controller.isLoadingEmployees.value) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16.h),
+                  Text('Loading employees...'),
+                ],
+              );
+            }
+            
+            if (controller.employees.isEmpty) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('No employees found'),
+                  SizedBox(height: 16.h),
+                  ElevatedButton(
+                    onPressed: () => Get.back(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: Text('Close'),
                   ),
                 ],
               );
-            },
-          );
-        }),
+            }
+            
+            return StatefulBuilder(
+              builder: (context, setState) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Select Employee to Assign',
+                      style: TextStyle(
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 20.h),
+                    
+                    // Employee dropdown - uses username instead of name and email
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          hint: Text('Select an employee'),
+                          value: selectedEmployeeId,
+                          isExpanded: true,
+                          items: controller.employees.map((employee) {
+                            return DropdownMenuItem<String>(
+                              value: employee.id,
+                              child: Text(employee.username),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              selectedEmployeeId = value;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    
+                    SizedBox(height: 24.h),
+                    
+                    // Action buttons
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Get.back(),
+                          child: Text('Cancel', style: TextStyle(color: Colors.black),),
+                        ),
+                        SizedBox(width: 12.w),
+                        ElevatedButton(
+                          onPressed: selectedEmployeeId == null 
+                              ? null 
+                              : () {
+                                  Get.back(); // Close assign dialog
+                                  controller.assignRequirement(
+                                    requirementId, 
+                                    selectedEmployeeId!,
+                                  );
+                                  Get.back(); // Close requirement details dialog
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.black,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: Text('Assign'),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            );
+          }),
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
+
   Widget _detailRow(String label, String value) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 8.h),

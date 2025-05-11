@@ -14,6 +14,7 @@ class EmployeeList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    bool isMobile = Get.width < 600;
     return Obx(() => isViewingProjects.value
         ? EmployeeProjects(
             employee: controller.selectedEmployee.value!,
@@ -268,7 +269,7 @@ class EmployeeList extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
-                            icon: Icon(Icons.delete, color: Colors.black, size: 14.sp,),
+                            icon: Icon(Icons.delete, color: Colors.black, size: 20.sp,),
                             onPressed: () {
                               controller.setSelectedEmployee(employee);
                               _showDeleteConfirmation(employee);

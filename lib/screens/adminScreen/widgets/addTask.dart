@@ -13,6 +13,9 @@ class CreateTaskContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Get current screen width to determine layout
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
     
     WidgetsBinding.instance.addPostFrameCallback((_) {
       controller.refreshEmployeeList();
@@ -22,7 +25,7 @@ class CreateTaskContent extends StatelessWidget {
     });
 
     return SingleChildScrollView(
-      padding: EdgeInsets.all(30.w),
+      padding: EdgeInsets.all(24.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -40,14 +43,11 @@ class CreateTaskContent extends StatelessWidget {
           _buildLabeledField('Task Name', controller.taskNameController),
           SizedBox(height: 16.h),
 
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildEmployeeSelector(),
-              _buildDateField('Start Date', true),
-              _buildDateField('End Date', false),
-            ],
-          ),
+          // Responsive layout for employee selector and date fields
+          isMobile
+              ? _buildMobileFormLayout()
+              : _buildDesktopFormLayout(),
+          
           SizedBox(height: 16.h),
 
           Text(
@@ -84,6 +84,32 @@ class CreateTaskContent extends StatelessWidget {
     );
   }
 
+  // Mobile layout with stacked form elements
+  Widget _buildMobileFormLayout() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildEmployeeSelector(fullWidth: true),
+        SizedBox(height: 16.h),
+        _buildDateField('Start Date', true, fullWidth: true),
+        SizedBox(height: 16.h),
+        _buildDateField('End Date', false, fullWidth: true),
+      ],
+    );
+  }
+
+  // Desktop layout with side-by-side form elements
+  Widget _buildDesktopFormLayout() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        _buildEmployeeSelector(),
+        _buildDateField('Start Date', true),
+        _buildDateField('End Date', false),
+      ],
+    );
+  }
+
   Widget _buildLabeledField(String label, TextEditingController textController) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -99,10 +125,12 @@ class CreateTaskContent extends StatelessWidget {
     );
   }
 
-  // Using a button that shows dialog instead of dropdown
-  Widget _buildEmployeeSelector() {
+  // Employee selector with optional fullWidth parameter
+  Widget _buildEmployeeSelector({bool fullWidth = false}) {
+    final width = fullWidth ? double.infinity : 196.w;
+    
     return SizedBox(
-      width: 196.w,
+      width: width,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -198,9 +226,12 @@ class CreateTaskContent extends StatelessWidget {
     );
   }
 
-  Widget _buildDateField(String label, bool isStart) {
+  // Date field with optional fullWidth parameter
+  Widget _buildDateField(String label, bool isStart, {bool fullWidth = false}) {
+    final width = fullWidth ? double.infinity : 196.w;
+    
     return SizedBox(
-      width: 196.w,
+      width: width,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

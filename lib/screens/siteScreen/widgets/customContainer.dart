@@ -38,19 +38,13 @@ class CustomContainer extends StatelessWidget {
                 //fit: BoxFit.contain,
               ),
               SizedBox(width: 8.w),  
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  Text(
-                    text,
-                    style: TextStyle(
-                      fontSize: 24.sp,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black
-                    ),
-                  ),
-                ],
+              Text(
+                text,
+                style: TextStyle(
+                  fontSize: 24.sp,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black
+                ),
               )
             ],
           ),

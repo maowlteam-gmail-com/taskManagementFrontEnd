@@ -40,13 +40,13 @@ class CustomContainerWidget extends StatelessWidget {
                   style: TextStyle(
                     fontSize: min(36.sp, 36), // Prevent font from becoming too large
                     fontWeight: FontWeight.w600,
-                    shadows: const [
-                      Shadow(
-                        color: Colors.black38,
-                        offset: Offset(2, 2),
-                        blurRadius: 4,
-                      ),
-                    ],
+                    // shadows: const [
+                    //   Shadow(
+                    //     color: Colors.black38,
+                    //     offset: Offset(2, 2),
+                    //     blurRadius: 4,
+                    //   ),
+                    // ],
                   ),
                   textAlign: TextAlign.center,
                 ),

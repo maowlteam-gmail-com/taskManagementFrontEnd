@@ -5,7 +5,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:dio/dio.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:intl/intl.dart';
+import 'package:maowl/screens/adminScreen/controller/downloadService.dart';
 import 'package:maowl/screens/adminScreen/widgets/collaboratorAvatar.dart';
+import 'dart:html' as html;
+// For Android MediaScanner (you might need a plugin for this)
+import 'package:media_scanner/media_scanner.dart';
 
 class EmployeeProjects extends StatefulWidget {
   final Map<String, dynamic> employee;
@@ -84,6 +88,9 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
     }
   }
 
+  // Add this to your existing Obx variables
+  var filterWorkDetails = [].obs;
+
   Future<void> fetchTaskHistory(String taskId) async {
     isLoadingHistory.value = true;
     historyError.value = '';
@@ -97,7 +104,7 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
       }
 
       final response = await _dio.get(
-        '${dotenv.env['BASE_URL']}/api/tasks/history/$taskId',
+        '${dotenv.env['BASE_URL']}/api/tasks/getTaskHistory/$taskId',
         options: Options(
           headers: {
             "Content-Type": "application/json",
@@ -112,16 +119,30 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
         if (responseBody.containsKey('history') &&
             responseBody['history'] is List) {
           final historyList = responseBody['history'] as List;
+
+          // Store all history items
           taskHistory.value =
               historyList.map((e) => e as Map<String, dynamic>).toList();
+
+          // Filter work_detail_added items and store them separately
+          filterWorkDetails.value =
+              taskHistory.value
+                  .where((item) => item['action'] == 'work_detail_added')
+                  .toList();
+
+          print("Work detail items: ${filterWorkDetails}");
+          print("work details lemgth : ${filterWorkDetails.length}");
         } else {
           taskHistory.value = [];
+          filterWorkDetails.value = [];
           historyError.value = "No history available for this task";
         }
       } else {
         historyError.value =
             "Failed to load task history: ${response.statusCode}";
       }
+    } on DioException catch (e) {
+      historyError.value = "Dio error: ${e.message}";
     } catch (e) {
       historyError.value = "Error fetching task history: $e";
     } finally {
@@ -185,6 +206,8 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
       case 'completed':
         return Colors.green;
       case 'cancelled':
+        return Colors.red;
+      case 'warning':
         return Colors.red;
       default:
         return Colors.grey;
@@ -257,7 +280,7 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
     }
   }
 
-  // Add this method to show a confirmation dialog
+  // show a confirmation dialog
   void showDeleteConfirmation(String taskId, String taskName) {
     Get.dialog(
       AlertDialog(
@@ -319,18 +342,21 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
   }
 
   Widget _buildTasksGridView() {
+    // Calculate the number of grid columns based on screen width using GetX
+    int crossAxisCount = Get.width < 600 ? 1 : 2;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: EdgeInsets.all(16.sp),
+          padding: EdgeInsets.all(16),
           child: Row(
             children: [
               IconButton(
                 icon: Icon(Icons.arrow_back),
                 onPressed: () => widget.onBack(),
               ),
-              SizedBox(width: 8.w),
+              SizedBox(width: 8),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -338,18 +364,15 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
                     Text(
                       '${widget.employee['username']}\'s Tasks',
                       style: TextStyle(
-                        fontSize: 24.sp,
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: 4.h),
+                    SizedBox(height: 4),
                     Obx(
                       () => Text(
                         '${tasks.length} ${tasks.length == 1 ? 'Task' : 'Tasks'} Assigned',
-                        style: TextStyle(
-                          fontSize: 14.sp,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
                     ),
                   ],
@@ -369,7 +392,6 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
         ),
         Divider(height: 1),
         Expanded(
-          
           child: Obx(() {
             if (isLoading.value) {
               return Center(child: CircularProgressIndicator());
@@ -414,13 +436,13 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
             }
 
             return Padding(
-              padding: EdgeInsets.all(16.sp),
+              padding: EdgeInsets.all(16),
               child: GridView.builder(
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 1.3,
-                  crossAxisSpacing: 16.sp,
-                  mainAxisSpacing: 16.sp,
+                  crossAxisCount: crossAxisCount,
+                  childAspectRatio: Get.width < 600 ? 1.0 : 1.3,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
                 ),
                 itemCount: tasks.length,
                 itemBuilder: (context, index) {
@@ -437,254 +459,330 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
                   final latestWorkDetail = getLatestWorkDetail(workDetails);
                   final hasWorkDetails = latestWorkDetail != null;
 
-                  // Modify the task card in the GridView.builder's itemBuilder
-return InkWell(
-  onTap: () => viewTaskDetail(task),
-  borderRadius: BorderRadius.circular(8.sp),
-  child: Card(
-    color: Color(0xff333333),
-    elevation: 2,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(8.sp),
-      side: BorderSide(color: Colors.grey.shade200),
-    ),
-    child: Stack(
-      children: [
-        // Status vertical line on the right side
-     Positioned(
-  top: 0,
-  bottom: 0,
-  right: 50,
-  width: 150.w, // Thickness of the status line
-  child: Container(
-    decoration: BoxDecoration(
-      color: getStatusColor(status),
-      borderRadius: BorderRadius.only(
-        topRight: Radius.circular(8.sp),
-        bottomRight: Radius.circular(8.sp),
-      ),
-    ),
-    child: Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: 6.sp,
-            vertical: 3.sp,
-          ),
-          decoration: BoxDecoration(
-            color: getStatusColor(status).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(3.sp),
-            border: Border.all(
-              color: Colors.white,
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 2,
-                spreadRadius: 0.5,
-              ),
-            ],
-          ),
-          child: Text(
-            capitalizeStatus(status),
-            style: TextStyle(
-              fontSize: 14.sp,
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              shadows: [
-                Shadow(
-                  offset: Offset(0.5, 0.5),
-                  blurRadius: 1.0,
-                  color: Colors.black.withOpacity(0.5),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    ),
-  ),
-),
+                  // Get latest file associated with the task
+                  final files = task['files'] as List<dynamic>?;
+                  final latestFile = getLatestFile(files);
+                  final hasFile = latestFile != null;
 
-        // Main content with padding to accommodate the status line
-        Padding(
-          padding: EdgeInsets.fromLTRB(12.sp, 12.sp, 20.sp, 12.sp), // Extra padding on right
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      projectName,
-                      style: TextStyle(
-                        fontSize: 24.sp,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  // Container(
-                    // padding: EdgeInsets.symmetric(
-                    //   horizontal: 8.sp,
-                    //   vertical: 4.sp,
-                    // ),
-                    // decoration: BoxDecoration(
-                    //   color: getStatusColor(status).withOpacity(0.1),
-                    //   borderRadius: BorderRadius.circular(4.sp),
-                    //   border: Border.all(
-                    //     color: getStatusColor(status),
-                    //     width: 1,
-                    //   ),
-                  //   ),
-                  //   child: Text(
-                  //     capitalizeStatus(status),
-                  //     style: TextStyle(
-                  //       fontSize: 10.sp,
-                  //       color: getStatusColor(status),
-                  //       fontWeight: FontWeight.bold,
-                  //     ),
-                  //   ),
-                  // ),
-                  SizedBox(width: 4.w),
-                  InkWell(
-                    onTap: () {
-                      showDeleteConfirmation(
-                        task['_id'],
-                        taskName,
-                      );
-                    },
-                    borderRadius: BorderRadius.circular(4.sp),
-                    child: Padding(
-                      padding: EdgeInsets.all(4.sp),
-                      child: Icon(
-                        Icons.delete_outline,
-                        size: 18.sp,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 8.h),
-              Text(
-                taskName,
-                style: TextStyle(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              SizedBox(height: 8.h),
+                  // Check if the latest work detail and latest file are from the same update
+                  final bool isFileRelatedToLatestWorkDetail =
+                      hasWorkDetails &&
+                      hasFile &&
+                      latestWorkDetail['added_by']['_id'] ==
+                          latestFile['uploaded_by'] &&
+                      (latestWorkDetail['date'].toString().substring(0, 19) ==
+                          latestFile['uploaded_at'].toString().substring(
+                            0,
+                            19,
+                          ));
 
-              // Latest Work Detail Section
-              Expanded(
-                child: Container(
-                  padding: EdgeInsets.all(8.sp),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(4.sp),
-                    border: Border.all(color: Colors.grey[300]!),
-                  ),
-                  child: hasWorkDetails
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                  return InkWell(
+                    onTap: () => viewTaskDetail(task),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Card(
+                      color: Color(0xff333333),
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: BorderSide(color: Colors.grey.shade200),
+                      ),
+                      child: Stack(
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Latest Update',
-                                style: TextStyle(
-                                  fontSize: 12.sp,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black,
+                          // Status vertical line on the right side
+                          Positioned(
+                            top: 0,
+                            bottom: 0,
+                            right: 50,
+                            width:
+                                Get.width < 600
+                                    ? 100
+                                    : 150, // Adjusted width for mobile
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: getStatusColor(status),
+                                borderRadius: BorderRadius.only(
+                                  topRight: Radius.circular(8),
+                                  bottomRight: Radius.circular(8),
                                 ),
                               ),
-                              Text(
-                                '${latestWorkDetail['hours_spent']} hrs',
-                                style: TextStyle(
-                                  fontSize: 10.sp,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blue[700],
+                              child: Padding(
+                                padding: const EdgeInsets.all(20.0),
+                                child: Align(
+                                  alignment: Alignment.topCenter,
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 3,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: getStatusColor(
+                                        status,
+                                      ).withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(3),
+                                      border: Border.all(
+                                        color: Colors.white,
+                                        width: 1.5,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.1),
+                                          blurRadius: 2,
+                                          spreadRadius: 0.5,
+                                        ),
+                                      ],
+                                    ),
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        capitalizeStatus(status),
+                                        style: TextStyle(
+                                          fontSize:
+                                              Get.width < 600
+                                                  ? 12
+                                                  : 14, // Responsive text size
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          shadows: [
+                                            Shadow(
+                                              offset: Offset(0.5, 0.5),
+                                              blurRadius: 1.0,
+                                              color: Colors.black.withOpacity(
+                                                0.5,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 4.h),
-                          Expanded(
-                            child: SingleChildScrollView(
-                              child: Text(
-                                '${latestWorkDetail['description']}',
-                                style: TextStyle(
-                                  fontSize: 14.sp,
-                                  color: Colors.black,
-                                ),
-                                overflow: TextOverflow.fade,
                               ),
                             ),
                           ),
-                          SizedBox(height: 4.h),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Caption: ${latestWorkDetail['caption'] ?? 'N/A'}',
-                                style: TextStyle(
-                                  fontSize: 10.sp,
-                                  fontStyle: FontStyle.italic,
-                                  color: Colors.grey[600],
+
+                          // Main content with padding to accommodate the status line
+                          Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              12,
+                              12,
+                              20,
+                              12,
+                            ), // Extra padding on right
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        projectName,
+                                        style: TextStyle(
+                                          fontSize:
+                                              Get.width < 600
+                                                  ? 20
+                                                  : 24, // Responsive text size
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    SizedBox(width: 4),
+                                    InkWell(
+                                      onTap: () {
+                                        showDeleteConfirmation(
+                                          task['_id'],
+                                          taskName,
+                                        );
+                                      },
+                                      borderRadius: BorderRadius.circular(4),
+                                      child: Padding(
+                                        padding: EdgeInsets.all(4),
+                                        child: Icon(
+                                          Icons.delete_outline,
+                                          size: 18,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                              Text(
-                                formatDateTime(
-                                  latestWorkDetail['date'],
+                                SizedBox(height: 8),
+                                Text(
+                                  taskName,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                style: TextStyle(
-                                  fontSize: 10.sp,
-                                  color: Colors.black,
+                                SizedBox(height: 8),
+
+                                // Latest Work Detail Section
+                                Expanded(
+                                  child: Container(
+                                    padding: EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[100],
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(
+                                        color: Colors.grey[300]!,
+                                      ),
+                                    ),
+                                    child:
+                                        hasWorkDetails
+                                            ? Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceBetween,
+                                                  children: [
+                                                    Text(
+                                                      'Latest Update',
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color: Colors.black,
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      '${latestWorkDetail['hours_spent']} hrs',
+                                                      style: TextStyle(
+                                                        fontSize: 10,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color: Colors.blue[700],
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                SizedBox(height: 4),
+                                                Expanded(
+                                                  child: SingleChildScrollView(
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
+                                                          '${latestWorkDetail['description']}',
+                                                          style: TextStyle(
+                                                            fontSize: 14,
+                                                            color: Colors.black,
+                                                          ),
+                                                          overflow:
+                                                              TextOverflow.fade,
+                                                        ),
+                                                        if (isFileRelatedToLatestWorkDetail &&
+                                                            hasFile) ...[
+                                                          SizedBox(height: 4),
+                                                          Row(
+                                                            children: [
+                                                              Icon(
+                                                                getFileIcon(
+                                                                  latestFile['type'],
+                                                                ),
+                                                                size: 14,
+                                                                color:
+                                                                    Colors
+                                                                        .blue[700],
+                                                              ),
+                                                              SizedBox(
+                                                                width: 4,
+                                                              ),
+                                                              Expanded(
+                                                                child: Text(
+                                                                  '${latestFile['filename']}',
+                                                                  style: TextStyle(
+                                                                    fontSize:
+                                                                        12,
+                                                                    color:
+                                                                        Colors
+                                                                            .blue[700],
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w500,
+                                                                  ),
+                                                                  maxLines: 1,
+                                                                  overflow:
+                                                                      TextOverflow
+                                                                          .ellipsis,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ],
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                                SizedBox(height: 4),
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceBetween,
+                                                  children: [
+                                                    Text(
+                                                      'By: ${latestWorkDetail['added_by']['username']}',
+                                                      style: TextStyle(
+                                                        fontSize: 10,
+                                                        fontStyle:
+                                                            FontStyle.italic,
+                                                        color: Colors.grey[600],
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      formatDateTime(
+                                                        latestWorkDetail['date'],
+                                                      ),
+                                                      style: TextStyle(
+                                                        fontSize: 10,
+                                                        color: Colors.black,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            )
+                                            : Center(
+                                              child: Text(
+                                                'No work updates yet',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey[500],
+                                                  fontStyle: FontStyle.italic,
+                                                ),
+                                              ),
+                                            ),
+                                  ),
                                 ),
-                              ),
-                            ],
+
+                                SizedBox(height: 8),
+                                _buildInfoRow(
+                                  Icons.calendar_today,
+                                  'Start: $startDate',
+                                ),
+                                SizedBox(height: 4),
+                                _buildInfoRow(Icons.event, 'Due: $endDate'),
+                                SizedBox(height: 4),
+                                _buildInfoRow(
+                                  Icons.update,
+                                  'Updated: $updatedAt',
+                                ),
+                              ],
+                            ),
                           ),
                         ],
-                      )
-                    : Center(
-                        child: Text(
-                          'No work updates yet',
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            color: Colors.grey[500],
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
                       ),
-                ),
-              ),
-
-              SizedBox(height: 8.h),
-              _buildInfoRow(
-                Icons.calendar_today,
-                'Start: $startDate',
-              ),
-              SizedBox(height: 4.h),
-              _buildInfoRow(Icons.event, 'Due: $endDate'),
-              SizedBox(height: 4.h),
-              _buildInfoRow(Icons.update, 'Updated: $updatedAt'),
-            ],
-          ),
-        ),
-      ],
-    ),
-  ),
-);
+                    ),
+                  );
                 },
               ),
             );
@@ -692,6 +790,44 @@ return InkWell(
         ),
       ],
     );
+  }
+
+  // Helper function to get the latest file
+  Map<String, dynamic>? getLatestFile(List<dynamic>? files) {
+    if (files == null || files.isEmpty) return null;
+
+    // Sort files by uploaded_at date (descending)
+    files.sort((a, b) {
+      final DateTime dateA = DateTime.parse(a['uploaded_at']);
+      final DateTime dateB = DateTime.parse(b['uploaded_at']);
+      return dateB.compareTo(dateA);
+    });
+
+    return files.first as Map<String, dynamic>;
+  }
+
+  // Helper function to get appropriate icon based on file type
+  IconData getFileIcon(String fileType) {
+    switch (fileType.toLowerCase()) {
+      case 'pdf':
+        return Icons.picture_as_pdf;
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+        return Icons.image;
+      case 'doc':
+      case 'docx':
+        return Icons.description;
+      case 'xls':
+      case 'xlsx':
+        return Icons.table_chart;
+      case 'ppt':
+      case 'pptx':
+        return Icons.slideshow;
+      default:
+        return Icons.insert_drive_file;
+    }
   }
 
   Widget _buildTaskDetailView() {
@@ -705,12 +841,117 @@ return InkWell(
     final createdAt = formatDateTime(task['createdAt']);
     final updatedAt = formatDateTime(task['updatedAt']);
     final assignedTo = task['assignedTo'] ?? [];
-    // final workDetails = task['work_details'] as List<dynamic>? ?? [];
 
+    // Get work details from task
     final List<dynamic> workDetailsRaw =
         task['work_details'] as List<dynamic>? ?? [];
     final List<Map<String, dynamic>> workDetails =
         List<Map<String, dynamic>>.from(workDetailsRaw);
+
+    // Get history from task if available
+    final List<dynamic> historyRaw = task['history'] as List<dynamic>? ?? [];
+    final List<Map<String, dynamic>> history = List<Map<String, dynamic>>.from(
+      historyRaw,
+    );
+
+    // Process files from history and add to work details
+    if (history.isNotEmpty) {
+      // Map to track work detail IDs
+      final Map<String, int> workDetailIndexMap = {};
+
+      // Create an index map for quick access to work details
+      for (int i = 0; i < workDetails.length; i++) {
+        final workDetailId = workDetails[i]['_id']?.toString();
+        if (workDetailId != null) {
+          workDetailIndexMap[workDetailId] = i;
+        }
+      }
+
+      // Process history to find files
+      for (final entry in history) {
+        final String action = entry['action'] ?? '';
+
+        if (action == 'image_added' || action == 'file_added') {
+          final details = entry['details'] ?? {};
+          final List<dynamic> filesRaw = entry['files'] as List<dynamic>? ?? [];
+
+          if (filesRaw.isNotEmpty) {
+            // Check if this file is related to work detail
+            final bool relatedToWorkDetail =
+                details['related_to_work_detail'] == true;
+            final String workDetailId =
+                details['work_detail_id']?.toString() ?? '';
+
+            if (relatedToWorkDetail &&
+                workDetailId.isNotEmpty &&
+                workDetailIndexMap.containsKey(workDetailId)) {
+              // Direct match with work detail ID
+              final int workDetailIndex = workDetailIndexMap[workDetailId]!;
+
+              // Convert files to expected format
+              List<Map<String, dynamic>> formattedFiles =
+                  filesRaw.map<Map<String, dynamic>>((file) {
+                    return {
+                      'id': file['_id']?.toString() ?? '',
+                      'name': file['filename'] ?? 'Unknown File',
+                      'description': file['caption'] ?? '',
+                      'size': 0, // Size might not be available
+                    };
+                  }).toList();
+
+              // Add files to work detail
+              if (workDetails[workDetailIndex]['files'] == null) {
+                workDetails[workDetailIndex]['files'] = [];
+              }
+              workDetails[workDetailIndex]['files'].addAll(formattedFiles);
+            } else if (relatedToWorkDetail) {
+              // Try to match by timestamp if no direct ID match
+              final timestamp =
+                  DateTime.tryParse(entry['timestamp'] ?? '') ?? DateTime.now();
+              int? closestIndex;
+              Duration closestDuration = Duration(
+                hours: 1,
+              ); // Max 1 hour difference
+
+              for (int i = 0; i < workDetails.length; i++) {
+                final workDetailDate =
+                    DateTime.tryParse(
+                      workDetails[i]['date']?.toString() ?? '',
+                    ) ??
+                    DateTime.now();
+                final difference = timestamp.difference(workDetailDate).abs();
+
+                if (difference < closestDuration) {
+                  closestDuration = difference;
+                  closestIndex = i;
+                }
+              }
+
+              if (closestIndex != null) {
+                // Convert files to expected format
+                List<Map<String, dynamic>> formattedFiles =
+                    filesRaw.map<Map<String, dynamic>>((file) {
+                      return {
+                        'id': file['_id']?.toString() ?? '',
+                        'name': file['filename'] ?? 'Unknown File',
+                        'description': file['caption'] ?? '',
+                        'size': 0, // Size might not be available
+                      };
+                    }).toList();
+
+                // Add files to work detail
+                if (workDetails[closestIndex]['files'] == null) {
+                  workDetails[closestIndex]['files'] = [];
+                }
+                workDetails[closestIndex]['files'].addAll(formattedFiles);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Sort work details by date (newest first)
     workDetails.sort((a, b) {
       final dateA =
           a['date'] != null
@@ -723,19 +964,22 @@ return InkWell(
       return dateB.compareTo(dateA); // Newest first
     });
 
+    // Use GetX to determine if we're on mobile view
+    bool isMobileView = Get.width < 800;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Header with back button
         Padding(
-          padding: EdgeInsets.all(16.sp),
+          padding: EdgeInsets.all(16),
           child: Row(
             children: [
               IconButton(
                 icon: Icon(Icons.arrow_back),
                 onPressed: closeTaskDetail,
               ),
-              SizedBox(width: 8.w),
+              SizedBox(width: 8),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -743,39 +987,36 @@ return InkWell(
                     Text(
                       taskName,
                       style: TextStyle(
-                        fontSize: 24.sp,
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    SizedBox(height: 4.h),
+                    SizedBox(height: 4),
                     Text(
                       projectName,
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                     ),
                   ],
                 ),
               ),
               Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: 12.sp,
-                  vertical: 6.sp,
-                ),
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: getStatusColor(status).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(4.sp),
+                  borderRadius: BorderRadius.circular(4),
                   border: Border.all(color: getStatusColor(status), width: 1),
                 ),
-                child: Text(
-                  capitalizeStatus(status),
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    color: getStatusColor(status),
-                    fontWeight: FontWeight.bold,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    capitalizeStatus(status),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: getStatusColor(status),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
@@ -784,482 +1025,616 @@ return InkWell(
         ),
         Divider(height: 1),
 
-        // Task details and history
+        // Task details and history - Responsive layout
         Expanded(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Left panel - Task details
-              Expanded(
-                flex: 3,
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.all(16.sp),
-                  child: Column(
+          child:
+              isMobileView
+                  // Mobile layout (vertical)
+                  ? SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Task info card
+                        Padding(
+                          padding: EdgeInsets.all(16),
+                          child: _buildTaskInfoCard(
+                            status,
+                            description,
+                            startDate,
+                            endDate,
+                            createdAt,
+                            updatedAt,
+                          ),
+                        ),
+
+                        // Work Details Card
+                        Padding(
+                          padding: EdgeInsets.all(16),
+                          child: _buildWorkDetailsCard(),
+                        ),
+                      ],
+                    ),
+                  )
+                  // Desktop layout (horizontal)
+                  : Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Task info card
-                      Card(
-                        color: Color(0xff333333),
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8.sp),
-                        ),
-                        child: Stack(
-                          children: [
-                        Positioned(
-  top: 0,
-  bottom: 0,
-  right: 50,
-  width: 150.w, // Thickness of the status line
-  child: Container(
-    decoration: BoxDecoration(
-      color: getStatusColor(status),
-      borderRadius: BorderRadius.only(
-        topRight: Radius.circular(8.sp),
-        bottomRight: Radius.circular(8.sp),
-      ),
-    ),
-    child: Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: 6.sp,
-            vertical: 3.sp,
-          ),
-          decoration: BoxDecoration(
-            color: getStatusColor(status).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(3.sp),
-            border: Border.all(
-              color: Colors.white,
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 2,
-                spreadRadius: 0.5,
-              ),
-            ],
-          ),
-          child: Text(
-            capitalizeStatus(status),
-            style: TextStyle(
-              fontSize: 14.sp,
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              shadows: [
-                Shadow(
-                  offset: Offset(0.5, 0.5),
-                  blurRadius: 1.0,
-                  color: Colors.black.withOpacity(0.5),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    ),
-  ),
-),
-                            Padding(
-                              padding: EdgeInsets.all(16.sp),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Task Information',
-                                    style: TextStyle(
-                                      fontSize: 18.sp,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white
-                                    ),
-                                  ),
-                                  SizedBox(height: 16.h),
-                            
-                                  // Description
-                                  Text(
-                                    'Description',
-                                    style: TextStyle(
-                                      fontSize: 14.sp,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  SizedBox(height: 8.h),
-                                  Container(
-                                    padding: EdgeInsets.all(12.sp),
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey[100],
-                                      borderRadius: BorderRadius.circular(4.sp),
-                                      border: Border.all(color: Colors.grey[300]!),
-                                    ),
-                                    child: Text(
-                                      description,
-                                      style: TextStyle(
-                                        fontSize: 14.sp,
-                                        color: Colors.black,
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(height: 16.h),
-                            
-                                  // Dates
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              'Start Date',
-                                              style: TextStyle(
-                                                fontSize: 14.sp,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                            SizedBox(height: 4.h),
-                                            Container(
-                                              padding: EdgeInsets.all(8.sp),
-                                              decoration: BoxDecoration(
-                                                color: Colors.grey[100],
-                                                borderRadius: BorderRadius.circular(
-                                                  4.sp,
-                                                ),
-                                                border: Border.all(
-                                                  color: Colors.grey[300]!,
-                                                ),
-                                              ),
-                                              child: Row(
-                                                children: [
-                                                  Icon(
-                                                    Icons.calendar_today,
-                                                    size: 16.sp,
-                                                    color: Colors.black87,
-                                                  ),
-                                                  SizedBox(width: 8.w),
-                                                  Text(
-                                                    startDate,
-                                                    style: TextStyle(
-                                                      fontSize: 14.sp,
-                                                      color: Colors.black,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      SizedBox(width: 16.w),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              'Due Date',
-                                              style: TextStyle(
-                                                fontSize: 14.sp,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                            SizedBox(height: 4.h),
-                                            Container(
-                                              padding: EdgeInsets.all(8.sp),
-                                              decoration: BoxDecoration(
-                                                color: Colors.grey[100],
-                                                borderRadius: BorderRadius.circular(
-                                                  4.sp,
-                                                ),
-                                                border: Border.all(
-                                                  color: Colors.grey[300]!,
-                                                ),
-                                              ),
-                                              child: Row(
-                                                children: [
-                                                  Icon(
-                                                    Icons.event,
-                                                    size: 16.sp,
-                                                    color: Colors.black87,
-                                                  ),
-                                                  SizedBox(width: 8.w),
-                                                  Text(
-                                                    endDate,
-                                                    style: TextStyle(
-                                                      fontSize: 14.sp,
-                                                      color: Colors.black,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  SizedBox(height: 16.h),
-                            
-                                  // Timestamps
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              'Created At',
-                                              style: TextStyle(
-                                                fontSize: 14.sp,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                            SizedBox(height: 4.h),
-                                            Text(
-                                              createdAt,
-                                              style: TextStyle(
-                                                fontSize: 14.sp,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      SizedBox(width: 16.w),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              'Last Updated',
-                                              style: TextStyle(
-                                                fontSize: 14.sp,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                            SizedBox(height: 4.h),
-                                            Text(
-                                              updatedAt,
-                                              style: TextStyle(
-                                                fontSize: 14.sp,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      SizedBox(height: 16.h),
-
-                      // Work Details Card
-                      Card(
-                        color: Color(0xff333333),
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8.sp),
-                        ),
-                        child: Padding(
-                          padding: EdgeInsets.all(16.sp),
+                      // Left panel - Task details
+                      Expanded(
+                        flex: 3,
+                        child: SingleChildScrollView(
+                          padding: EdgeInsets.all(16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Work Details',
-                                    style: TextStyle(
-                                      fontSize: 18.sp,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white
-                                    ),
-                                  ),
-                                  Text(
-                                    '${workDetails.length} ${workDetails.length == 1 ? 'Entry' : 'Entries'}',
-                                    style: TextStyle(
-                                      fontSize: 14.sp,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ],
+                              // Task info card
+                              _buildTaskInfoCard(
+                                status,
+                                description,
+                                startDate,
+                                endDate,
+                                createdAt,
+                                updatedAt,
                               ),
-                              SizedBox(height: 16.h),
-
-                              if (workDetails.isEmpty)
-                                Center(
-                                  child: Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      vertical: 24.h,
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        Icon(
-                                          Icons.work_outline,
-                                          size: 48,
-                                          color: Colors.white,
-                                        ),
-                                        SizedBox(height: 16.h),
-                                        Text(
-                                          'No work details available',
-                                          style: TextStyle(
-                                            fontSize: 14.sp,
-                                            color: Colors.white,
-                                            fontStyle: FontStyle.italic,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                )
-                              else
-                                ListView.separated(
-                                  shrinkWrap: true,
-                                  physics: NeverScrollableScrollPhysics(),
-                                  itemCount: workDetails.length,
-                                  separatorBuilder:
-                                      (context, index) => Divider(height: 24.h),
-                                  itemBuilder: (context, index) {
-                                    final workDetail =
-                                        workDetails[index];
-                                    final description =
-                                        workDetail['description'] ??
-                                        'No description';
-                                    // final caption =
-                                    //     workDetail['caption'] ?? 'N/A';
-                                    final date = formatDateTime(
-                                      workDetail['date'],
-                                    );
-                                    final hoursSpent =
-                                        workDetail['hours_spent'] ?? 0;
-                                    final addedBy = workDetail['added_by'];
-                                    String addedByName = getUsername(addedBy);
-
-                                    return Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            CollaboratorAvatar(
-                                              name: addedByName,
-                                              size: 32,
-                                            ),
-                                            SizedBox(width: 12.w),
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    addedByName,
-                                                    style: TextStyle(
-                                                      fontSize: 14.sp,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                          color: Colors.white
-                                                    ),
-                                                  ),
-                                                  Text(
-                                                    date,
-                                                    style: TextStyle(
-                                                      fontSize: 12.sp,
-                                                      color: Colors.white,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            Container(
-                                              padding: EdgeInsets.symmetric(
-                                                horizontal: 8.sp,
-                                                vertical: 4.sp,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: Colors.blue[50],
-                                                borderRadius:
-                                                    BorderRadius.circular(4.sp),
-                                                border: Border.all(
-                                                  color: Colors.blue[300]!,
-                                                  width: 1,
-                                                ),
-                                              ),
-                                              child: Text(
-                                                '$hoursSpent hrs',
-                                                style: TextStyle(
-                                                  fontSize: 12.sp,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.blue[700],
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        SizedBox(height: 12.h),
-                                        Container(
-                                          width: double.infinity,
-                                          padding: EdgeInsets.all(12.sp),
-                                          decoration: BoxDecoration(
-                                            color: Colors.grey[100],
-                                            borderRadius: BorderRadius.circular(
-                                              4.sp,
-                                            ),
-                                            border: Border.all(
-                                              color: Colors.grey[300]!,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            description,
-                                            style: TextStyle(
-                                              fontSize: 14.sp,
-                                              color: Colors.black,
-                                            ),
-                                          ),
-                                        ),
-                                        SizedBox(height: 8.h),
-                                        // Text(
-                                        //   'Caption: $caption',
-                                        //   style: TextStyle(
-                                        //     fontSize: 12.sp,
-                                        //     fontStyle: FontStyle.italic,
-                                        //     color: Colors.grey[600],
-                                        //   ),
-                                        // ),
-                                      ],
-                                    );
-                                  },
-                                ),
+                              SizedBox(height: 16),
+                              // Work Details Card
+                              _buildWorkDetailsCard(),
                             ],
                           ),
                         ),
                       ),
                     ],
                   ),
+        ),
+      ],
+    );
+  }
+
+  // Extract the Task Info Card to a separate method
+  Widget _buildTaskInfoCard(
+    String status,
+    String description,
+    String startDate,
+    String endDate,
+    String createdAt,
+    String updatedAt,
+  ) {
+    return Card(
+      color: Color(0xff333333),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      child: Stack(
+        children: [
+          Positioned(
+            top: 0,
+            bottom: 0,
+            right: 50,
+            width: Get.width < 600 ? 100 : 150, // Responsive status line width
+            child: Container(
+              decoration: BoxDecoration(
+                color: getStatusColor(status),
+                borderRadius: BorderRadius.only(
+                  topRight: Radius.circular(8),
+                  bottomRight: Radius.circular(8),
                 ),
               ),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: getStatusColor(status).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(3),
+                      border: Border.all(color: Colors.white, width: 1.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 2,
+                          spreadRadius: 0.5,
+                        ),
+                      ],
+                    ),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        capitalizeStatus(status),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          shadows: [
+                            Shadow(
+                              offset: Offset(0.5, 0.5),
+                              blurRadius: 1.0,
+                              color: Colors.black.withOpacity(0.5),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Task Information',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(height: 16),
+
+                // Description
+                Text(
+                  'Description',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  child: Text(
+                    description,
+                    style: TextStyle(fontSize: 14, color: Colors.black),
+                  ),
+                ),
+                SizedBox(height: 16),
+
+                // Dates - Responsive layout
+                Get.width < 500
+                    ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildDateField(
+                          'Start Date',
+                          Icons.calendar_today,
+                          startDate,
+                        ),
+                        SizedBox(height: 12),
+                        _buildDateField('Due Date', Icons.event, endDate),
+                      ],
+                    )
+                    : Row(
+                      children: [
+                        Expanded(
+                          child: _buildDateField(
+                            'Start Date',
+                            Icons.calendar_today,
+                            startDate,
+                          ),
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: _buildDateField(
+                            'Due Date',
+                            Icons.event,
+                            endDate,
+                          ),
+                        ),
+                      ],
+                    ),
+                SizedBox(height: 16),
+
+                // Timestamps - Responsive layout
+                Get.width < 500
+                    ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildTimestampField('Created At', createdAt),
+                        SizedBox(height: 12),
+                        _buildTimestampField('Last Updated', updatedAt),
+                      ],
+                    )
+                    : Row(
+                      children: [
+                        Expanded(
+                          child: _buildTimestampField('Created At', createdAt),
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: _buildTimestampField(
+                            'Last Updated',
+                            updatedAt,
+                          ),
+                        ),
+                      ],
+                    ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Extract the date field to a separate method
+  Widget _buildDateField(String label, IconData icon, String date) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        SizedBox(height: 4),
+        Container(
+          padding: EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: Colors.grey[300]!),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 16, color: Colors.black87),
+              SizedBox(width: 8),
+              Text(date, style: TextStyle(fontSize: 14, color: Colors.black)),
             ],
           ),
         ),
       ],
     );
   }
+
+  // Extract the timestamp field to a separate method
+  Widget _buildTimestampField(String label, String timestamp) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        SizedBox(height: 4),
+        Text(timestamp, style: TextStyle(fontSize: 14, color: Colors.white)),
+      ],
+    );
+  }
+
+ Widget _buildWorkDetailsCard() {
+  // Inject the DownloadService using GetX
+  final DownloadService downloadService = Get.put(DownloadService());
+
+  // Use Obx to reactively rebuild when filterWorkDetails.value changes
+  return Obx(() {
+    // Use filterWorkDetails.value directly throughout the widget
+    return Card(
+      color: Color(0xff333333),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
+      child: Padding(
+        padding: EdgeInsets.all(16.w),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Work Details',
+                  style: TextStyle(
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                Text(
+                  '${filterWorkDetails.value.length} ${filterWorkDetails.value.length == 1 ? 'Entry' : 'Entries'}',
+                  style: TextStyle(fontSize: 14.sp, color: Colors.white),
+                ),
+              ],
+            ),
+            SizedBox(height: 16.h),
+
+            if (filterWorkDetails.value.isEmpty)
+              Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24.h),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.work_outline,
+                        size: 48.sp,
+                        color: Colors.white,
+                      ),
+                      SizedBox(height: 16.h),
+                      Text(
+                        'No work details available',
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          color: Colors.white,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
+                itemCount: filterWorkDetails.value.length,
+                separatorBuilder: (context, index) => Divider(height: 24.h),
+                itemBuilder: (context, index) {
+                  // Make sure to use .value consistently
+                  final item = filterWorkDetails.value[index];
+
+                  // Get description from the appropriate location in the structure
+                  final description =
+                      item['details']?['description'] ??
+                      item['description'] ??
+                      'No description';
+
+                  final date = formatDateTime(
+                    item['timestamp'] ?? item['date'],
+                  );
+
+                  // Get hours spent - ensure it's parsed as a numeric value
+                  final hoursSpentRaw = item['details']?['hours_spent'] ?? 
+                                      item['hours_spent'] ?? 
+                                      0;
+                  // Convert to numeric safely
+                  final hoursSpent = hoursSpentRaw is String 
+                      ? double.tryParse(hoursSpentRaw) ?? 0 
+                      : (hoursSpentRaw is num ? hoursSpentRaw : 0);
+
+                  // Get user information and extract username
+                  final addedBy = item['performed_by'] ?? item['added_by'];
+                  String addedByName = '';
+
+                  // Handle different ways the username might be stored
+                  if (addedBy is Map<String, dynamic>) {
+                    addedByName = addedBy['username'] ?? 'Unknown User';
+                  } else if (addedBy is String) {
+                    addedByName = addedBy;
+                  } else {
+                    addedByName = 'Unknown User';
+                  }
+
+                  // Extract files from the API format
+                  List<Map<String, dynamic>> files = [];
+
+                  // Check if files exist in the history item structure
+                  if (item['files'] != null && item['files'] is List) {
+                    files = (item['files'] as List).map<Map<String, dynamic>>((file) {
+                      if (file is Map<String, dynamic>) {
+                        // Directly use the file structure as it appears in your data
+                        // Important: Use the '_id' field as the fileId for downloading
+                        return {
+                          'id': file['_id'] ?? '',
+                          'filename': file['filename'] ?? 'Unknown File',
+                          'caption': file['caption'] ?? '',
+                          'type': file['type'] ?? '',
+                        };
+                      } else {
+                        return {
+                          'id': '',
+                          'filename': 'Unknown File',
+                          'caption': '',
+                          'type': '',
+                        };
+                      }
+                    }).toList();
+                  }
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          CollaboratorAvatar(name: addedByName, size: 32.sp),
+                          SizedBox(width: 12.w),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  addedByName,
+                                  style: TextStyle(
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                Text(
+                                  date,
+                                  style: TextStyle(
+                                    fontSize: 12.sp,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (hoursSpent > 0)
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 8.w,
+                                vertical: 4.h,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.blue[50],
+                                borderRadius: BorderRadius.circular(4.r),
+                                border: Border.all(
+                                  color: Colors.blue[300]!,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Text(
+                                '$hoursSpent hrs',
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue[700],
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      SizedBox(height: 12.h),
+                      if (description.isNotEmpty)
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.all(12.w),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[800],
+                            borderRadius: BorderRadius.circular(4.r),
+                            border: Border.all(color: Colors.grey[600]!),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (description.isNotEmpty)
+                                Text(
+                                  description,
+                                  style: TextStyle(
+                                    fontSize: 14.sp,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              // Show files if present
+                              if (files.isNotEmpty) ...[
+                                if (description.isNotEmpty)
+                                  SizedBox(height: 12.h),
+                                Text(
+                                  'Attached Files',
+                                  style: TextStyle(
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                                SizedBox(height: 8.h),
+                                ...files
+                                    .map(
+                                      (file) => _buildFileItem(
+                                        file,
+                                        downloadService,
+                                      ),
+                                    )
+                                    .toList(),
+                              ],
+                            ],
+                          ),
+                        ),
+                      SizedBox(height: 8.h),
+                    ],
+                  );
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  });
+}
+
+Widget _buildFileItem(Map<String, dynamic> file, DownloadService downloadService) {
+  final String fileName = file['filename'] ?? 'Unknown File';
+  final String fileType = file['type'] ?? '';
+  final String fileId = file['id'] ?? '';
+  
+  // Choose icon based on file type
+  IconData fileIcon;
+  Color iconColor;
+  
+  switch (fileType.toLowerCase()) {
+    case 'pdf':
+      fileIcon = Icons.picture_as_pdf;
+      iconColor = Colors.red[400]!;
+      break;
+    case 'image':
+      fileIcon = Icons.image;
+      iconColor = Colors.blue[400]!;
+      break;
+    case 'doc':
+    case 'docx':
+      fileIcon = Icons.description;
+      iconColor = Colors.blue[700]!;
+      break;
+    case 'xls':
+    case 'xlsx':
+      fileIcon = Icons.table_chart;
+      iconColor = Colors.green[600]!;
+      break;
+    default:
+      fileIcon = Icons.insert_drive_file;
+      iconColor = Colors.grey[400]!;
+  }
+
+  return Padding(
+    padding: EdgeInsets.only(bottom: 8.h),
+    child: InkWell(
+      onTap: () {
+        // If fileId exists, trigger download and pass the fileName
+        if (fileId.isNotEmpty) {
+          downloadService.downloadFile(fileId, fileName: fileName);
+        }
+      },
+      borderRadius: BorderRadius.circular(4.r),
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 8.h, horizontal: 12.w),
+        decoration: BoxDecoration(
+          color: Colors.grey[700],
+          borderRadius: BorderRadius.circular(4.r),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              fileIcon,
+              size: 20.sp,
+              color: iconColor,
+            ),
+            SizedBox(width: 8.w),
+            Expanded(
+              child: Text(
+                fileName,
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  color: Colors.white,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Icon(
+              Icons.download,
+              size: 18.sp,
+              color: Colors.blue[300],
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
 
   Widget _buildInfoRow(IconData icon, String text) {
     return Row(

@@ -9,7 +9,8 @@ import 'package:get_storage/get_storage.dart';
 class TaskController extends GetxController {
   final box = GetStorage();
   var employees = <String>[].obs;
-  var employeeIds = <String, String>{}.obs; // Map to store employee names and IDs
+  var employeeIds =
+      <String, String>{}.obs; // Map to store employee names and IDs
   var selectedEmployee = Rxn<String>();
   var selectedEmployeeId = Rxn<String>();
   var startDate = ''.obs;
@@ -53,10 +54,12 @@ class TaskController extends GetxController {
   Future<void> fetchEmployees() async {
     try {
       print("Starting fetchEmployees...");
-      
+
       final token = box.read('token');
-      print("Token data from storage: ${token != null ? token.substring(0, Math.min(20, token.length)) : 'null'}...");
-      
+      print(
+        "Token data from storage: ${token != null ? token.substring(0, Math.min(20, token.length)) : 'null'}...",
+      );
+
       if (token == null || token.isEmpty) {
         print("No valid token found, using test data");
         if (employees.isEmpty) {
@@ -64,7 +67,7 @@ class TaskController extends GetxController {
           employeeIds.addAll({
             'John Doe': '67e2a71d8b1dc5a79a258937',
             'Jane Smith': '67e2a71d8b1dc5a79a258938',
-            'Robert Johnson': '67e2a71d8b1dc5a79a258939'
+            'Robert Johnson': '67e2a71d8b1dc5a79a258939',
           });
           selectedEmployee.value = employees.first;
           selectedEmployeeId.value = employeeIds[employees.first];
@@ -72,7 +75,7 @@ class TaskController extends GetxController {
         }
         return;
       }
-      
+
       print("Making API request to ${dotenv.env['BASE_URL']}/api/getEmployees");
       var response = await Dio().get(
         '${dotenv.env['BASE_URL']}/api/getEmployees',
@@ -83,17 +86,17 @@ class TaskController extends GetxController {
           },
         ),
       );
-      
+
       print("API Response status: ${response.statusCode}");
       print("API Response data type: ${response.data.runtimeType}");
       print("API Response data: ${response.data}");
-      
+
       if (response.statusCode == 200) {
         if (response.data is List) {
           print("Processing list response...");
           Map<String, String> idMap = {};
-          List<String> names = (response.data as List)
-              .map((e) {
+          List<String> names =
+              (response.data as List).map((e) {
                 print("Processing employee: $e");
                 String name = e['username']?.toString() ?? "Unknown";
                 String id = e['_id']?.toString() ?? "";
@@ -101,12 +104,11 @@ class TaskController extends GetxController {
                   idMap[name] = id;
                 }
                 return name;
-              })
-              .toList();
-          
+              }).toList();
+
           print("Extracted names: $names");
           print("Extracted IDs: $idMap");
-          
+
           if (names.isNotEmpty) {
             employees.assignAll(names);
             employeeIds.clear();
@@ -124,20 +126,19 @@ class TaskController extends GetxController {
           // Handle if response is a map with a data field containing employees
           if (response.data['data'] != null && response.data['data'] is List) {
             Map<String, String> idMap = {};
-            List<String> names = (response.data['data'] as List)
-                .map((e) {
+            List<String> names =
+                (response.data['data'] as List).map((e) {
                   String name = e['username']?.toString() ?? "Unknown";
                   String id = e['_id']?.toString() ?? "";
                   if (id.isNotEmpty) {
                     idMap[name] = id;
                   }
                   return name;
-                })
-                .toList();
-            
+                }).toList();
+
             print("Extracted names from data field: $names");
             print("Extracted IDs: $idMap");
-            
+
             if (names.isNotEmpty) {
               employees.assignAll(names);
               employeeIds.clear();
@@ -160,7 +161,7 @@ class TaskController extends GetxController {
         employeeIds.addAll({
           'John Doe': '67e2a71d8b1dc5a79a258937',
           'Jane Smith': '67e2a71d8b1dc5a79a258938',
-          'Robert Johnson': '67e2a71d8b1dc5a79a258939'
+          'Robert Johnson': '67e2a71d8b1dc5a79a258939',
         });
         selectedEmployee.value = employees.first;
         selectedEmployeeId.value = employeeIds[employees.first];
@@ -172,7 +173,9 @@ class TaskController extends GetxController {
   void selectEmployee(String employee) {
     selectedEmployee.value = employee;
     selectedEmployeeId.value = employeeIds[employee];
-    print("Employee selected: ${selectedEmployee.value} with ID: ${selectedEmployeeId.value}");
+    print(
+      "Employee selected: ${selectedEmployee.value} with ID: ${selectedEmployeeId.value}",
+    );
   }
 
   Future<void> submitTask() async {
@@ -193,11 +196,11 @@ class TaskController extends GetxController {
 
     try {
       isLoading.value = true;
-      
+
       // Format dates to ISO string format
       DateTime startDateTime = DateTime.parse(startDate.value);
       DateTime endDateTime = DateTime.parse(endDate.value);
-      
+
       // Create task payload
       Map<String, dynamic> taskData = {
         "project_name": projectNameController.text,
@@ -205,20 +208,23 @@ class TaskController extends GetxController {
         "description": detailsController.text,
         "start_date": startDateTime.toIso8601String(),
         "end_date": endDateTime.toIso8601String(),
-        "assigned_to": selectedEmployeeId.value
+        "assigned_to": selectedEmployeeId.value,
       };
-      
+
       print("Creating task with data: $taskData");
-      
+
       // Get token from storage
       final token = box.read('token');
-      
+
       if (token == null || token.isEmpty) {
-        Get.snackbar('Error', 'No authentication token found. Please login again.');
+        Get.snackbar(
+          'Error',
+          'No authentication token found. Please login again.',
+        );
         isLoading.value = false;
         return;
       }
-      
+
       // Make API call
       var response = await Dio().post(
         '${dotenv.env['BASE_URL']}/api/tasks/createTask',
@@ -230,9 +236,9 @@ class TaskController extends GetxController {
           },
         ),
       );
-      
+
       print("API response: ${response.data}");
-      
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         // Clear form fields
         projectNameController.clear();
@@ -242,23 +248,23 @@ class TaskController extends GetxController {
         endDate.value = '';
         startDateController.clear();
         endDateController.clear();
-        
+
         Get.snackbar(
-        "Success",
-        "Task created successfully",
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.black87,
-        colorText: Colors.white,
-        duration: Duration(seconds: 3),
-      );
+          "Success",
+          "Task created successfully",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.black87,
+          colorText: Colors.white,
+          duration: Duration(seconds: 3),
+        );
       } else {
         Get.snackbar(
-        "Failed",
-        "Failed to create task: ${response.statusCode}",
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.black87,
-        colorText: Colors.white,
-      );
+          "Failed",
+          "Failed to create task: ${response.statusCode}",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.black87,
+          colorText: Colors.white,
+        );
       }
     } catch (e) {
       print("Error creating task: $e");
