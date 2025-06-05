@@ -101,6 +101,89 @@ class AdminScreenController extends GetxController {
     }
   }
 
+  // Rename employee
+  Future<bool> renameEmployee(
+    String employeeId,
+    String currentUsername,
+    String newUsername,
+  ) async {
+    isLoading.value = true;
+    errorMessage.value = "";
+
+    try {
+      final token = box.read('token');
+
+      if (token == null) {
+        Get.snackbar(
+          "Error",
+          "Authentication token not found",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.black87,
+          colorText: Colors.white,
+        );
+        return false;
+      }
+
+      print('token : $token');
+      final response = await _dio.patch(
+        '${dotenv.env['BASE_URL']}/api/renameEmployee',
+        data: {
+          'username': currentUsername,
+          'newUsername': newUsername,
+        },
+        options: Options(
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer $token",
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        // Update the local list with new username
+        final index = employees.indexWhere((emp) => emp['_id'] == employeeId);
+        if (index != -1) {
+          employees[index]['username'] = newUsername;
+          employees.refresh();
+        }
+        
+        Get.snackbar(
+          "Success",
+          "Employee username updated successfully",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.black,
+          colorText: Colors.white,
+          duration: Duration(seconds: 3),
+        );
+
+        return true;
+      } else {
+        Get.snackbar(
+          "Failed",
+          "Failed to rename employee: ${response.statusCode}",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        errorMessage.value =
+            "Failed to rename employee: ${response.statusCode}";
+        return false;
+      }
+    } catch (e) {
+      errorMessage.value = "Error renaming employee: $e";
+      Get.snackbar(
+        "Error",
+        "Error renaming employee: $e",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   // Update employee password
   Future<bool> updateEmployeePassword(
     String employeeId,

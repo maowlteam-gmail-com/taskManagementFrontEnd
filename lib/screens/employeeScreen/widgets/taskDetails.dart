@@ -255,7 +255,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       final startDate = formatDate(_task['start_date']);
       final endDate = formatDate(_task['end_date']);
       final status = _task['status'] ?? 'unknown';
-      final createdAt = formatDate(_task['createdAt']);
+      // final createdAt = formatDate(_task['createdAt']);
       final updatedAt = formatDate(_task['updatedAt']);
 
       String createdBy = 'Unknown';
@@ -359,7 +359,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                               _buildInfoRow('End Date:', endDate),
                               _buildInfoRow('Created By:', createdBy),
                               _buildInfoRow('Assigned To:', assignedTo),
-                              _buildInfoRow('Created:', createdAt),
+                              // _buildInfoRow('Created:', createdAt),
                               _buildInfoRow('Updated:', updatedAt),
                             ],
                           ),

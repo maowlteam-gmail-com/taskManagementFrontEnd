@@ -18,8 +18,8 @@ class EmployeeProjects extends StatefulWidget {
   const EmployeeProjects({
     super.key,
     required this.employee,
-    required this.onBack, 
-  }); 
+    required this.onBack,
+  });
 
   @override
   State<EmployeeProjects> createState() => _EmployeeProjectsState();
@@ -341,7 +341,7 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
     );
   }
 
- Widget _buildTasksGridView() {
+Widget _buildTasksGridView() {
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
@@ -389,7 +389,7 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
                       () => Text(
                         '${tasks.length} ${tasks.length == 1 ? 'Task' : 'Tasks'} Assigned',
                         style: TextStyle(
-                          fontSize: 14.sp, 
+                          fontSize: 14.sp,
                           color: Colors.grey[400],
                         ),
                       ),
@@ -424,7 +424,7 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
           ),
         ),
       ),
-      
+
       // Content area
       Expanded(
         child: Container(
@@ -432,9 +432,7 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
           child: Obx(() {
             if (isLoading.value) {
               return Center(
-                child: CircularProgressIndicator(
-                  color: Colors.grey[800],
-                ),
+                child: CircularProgressIndicator(color: Colors.grey[800]),
               );
             }
 
@@ -443,11 +441,7 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.error_outline, 
-                      color: Colors.red, 
-                      size: 48.sp,
-                    ),
+                    Icon(Icons.error_outline, color: Colors.red, size: 48.sp),
                     SizedBox(height: 16.h),
                     Text(
                       errorMessage.value,
@@ -477,7 +471,7 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      Icons.task_outlined, 
+                      Icons.task_outlined,
                       size: 48.sp,
                       color: Colors.grey[600],
                     ),
@@ -503,23 +497,34 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     bool isMobile = constraints.maxWidth < 600;
-                    
+
+                    // Sort tasks by updatedAt date (latest first)
+                    final sortedTasks = List.from(tasks);
+                    sortedTasks.sort((a, b) {
+                      final dateA = DateTime.tryParse(a['updatedAt'] ?? '') ?? DateTime(1970);
+                      final dateB = DateTime.tryParse(b['updatedAt'] ?? '') ?? DateTime(1970);
+                      return dateB.compareTo(dateA); // Latest first (descending order)
+                    });
+
                     return GridView.builder(
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: isMobile ? 1 : 2,
-                        childAspectRatio: isMobile ? 1.0 : 1.4,
+                        childAspectRatio: isMobile ? 0.85 : 1.2,
                         crossAxisSpacing: 12.w,
                         mainAxisSpacing: 12.h,
                       ),
-                      itemCount: tasks.length,
+                      itemCount: sortedTasks.length,
                       itemBuilder: (context, index) {
-                        final task = tasks[index];
+                        final task = sortedTasks[index];
                         final projectName = task['project_name'] ?? 'Unknown Project';
                         final taskName = task['task_name'] ?? 'Unnamed Task';
                         final startDate = formatDate(task['start_date']);
                         final endDate = formatDate(task['end_date']);
                         final updatedAt = formatDate(task['updatedAt']);
                         final status = task['status'] ?? 'unknown';
+                        
+                        // User information
+                        final assignedUser = task['assigned_to']?['username'] ?? 'Unknown User';
                         final createdBy = task['created_by']?['username'] ?? 'Unknown User';
 
                         // Get latest work detail
@@ -527,19 +532,13 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
                         final latestWorkDetail = getLatestWorkDetail(workDetails);
                         final hasWorkDetails = latestWorkDetail != null;
 
-                        // Get latest file associated with the task
-                        final files = task['files'] as List<dynamic>?;
-                        final latestFile = getLatestFile(files);
-                        final hasFile = latestFile != null;
-
-                        // Check if the latest work detail and latest file are from the same update
-                        final bool isFileRelatedToLatestWorkDetail =
-                            hasWorkDetails &&
-                            hasFile &&
-                            latestWorkDetail['added_by']['_id'] ==
-                                latestFile['uploaded_by'] &&
-                            (latestWorkDetail['date'].toString().substring(0, 19) ==
-                                latestFile['uploaded_at'].toString().substring(0, 19));
+                        // Get files and images from latest work detail
+                        List<dynamic> files = [];
+                        List<dynamic> images = [];
+                        if (hasWorkDetails) {
+                          files = latestWorkDetail['files'] ?? [];
+                          images = latestWorkDetail['images'] ?? [];
+                        }
 
                         return Card(
                           elevation: 8,
@@ -566,7 +565,12 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
                                     ),
                                   ),
                                   child: Padding(
-                                    padding: EdgeInsets.fromLTRB(16.w, 16.h, 80.w, 16.h),
+                                    padding: EdgeInsets.fromLTRB(
+                                      16.w,
+                                      16.h,
+                                      80.w,
+                                      16.h,
+                                    ),
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
@@ -614,9 +618,9 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
                                             ),
                                           ],
                                         ),
-                                        
+
                                         SizedBox(height: 8.h),
-                                        
+
                                         // Task name
                                         Text(
                                           taskName,
@@ -628,7 +632,84 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
-                                        
+
+                                        SizedBox(height: 8.h),
+
+                                        // User Information Section
+                                        Container(
+                                          padding: EdgeInsets.all(10.w),
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey[850],
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(
+                                              color: Colors.grey[700]!,
+                                            ),
+                                          ),
+                                          child: Column(
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.person_outline,
+                                                    size: 14.sp,
+                                                    color: Colors.blue[300],
+                                                  ),
+                                                  SizedBox(width: 6.w),
+                                                  Text(
+                                                    'Assigned to: ',
+                                                    style: TextStyle(
+                                                      fontSize: 11.sp,
+                                                      color: Colors.grey[400],
+                                                    ),
+                                                  ),
+                                                  Expanded(
+                                                    child: Text(
+                                                      assignedUser,
+                                                      style: TextStyle(
+                                                        fontSize: 11.sp,
+                                                        fontWeight: FontWeight.w600,
+                                                        color: Colors.blue[300],
+                                                      ),
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              SizedBox(height: 4.h),
+                                              Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.person_add_outlined,
+                                                    size: 14.sp,
+                                                    color: Colors.green[300],
+                                                  ),
+                                                  SizedBox(width: 6.w),
+                                                  Text(
+                                                    'Created by: ',
+                                                    style: TextStyle(
+                                                      fontSize: 11.sp,
+                                                      color: Colors.grey[400],
+                                                    ),
+                                                  ),
+                                                  Expanded(
+                                                    child: Text(
+                                                      createdBy,
+                                                      style: TextStyle(
+                                                        fontSize: 11.sp,
+                                                        fontWeight: FontWeight.w600,
+                                                        color: Colors.green[300],
+                                                      ),
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+
                                         SizedBox(height: 12.h),
 
                                         // Latest Work Detail Section
@@ -681,6 +762,8 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
                                                         ],
                                                       ),
                                                       SizedBox(height: 8.h),
+                                                      
+                                                      // Work description
                                                       Expanded(
                                                         child: SingleChildScrollView(
                                                           child: Column(
@@ -695,37 +778,89 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
                                                                 ),
                                                                 overflow: TextOverflow.fade,
                                                               ),
-                                                              if (isFileRelatedToLatestWorkDetail && hasFile) ...[
+                                                              
+                                                              // Files and Images Section
+                                                              if (files.isNotEmpty || images.isNotEmpty) ...[
                                                                 SizedBox(height: 8.h),
                                                                 Container(
                                                                   padding: EdgeInsets.all(8.w),
                                                                   decoration: BoxDecoration(
-                                                                    color: Colors.blue.withOpacity(0.1),
+                                                                    color: Colors.grey[50],
                                                                     borderRadius: BorderRadius.circular(6),
                                                                     border: Border.all(
-                                                                      color: Colors.blue.withOpacity(0.3),
+                                                                      color: Colors.grey[300]!,
                                                                     ),
                                                                   ),
-                                                                  child: Row(
+                                                                  child: Column(
+                                                                    crossAxisAlignment: CrossAxisAlignment.start,
                                                                     children: [
-                                                                      Icon(
-                                                                        getFileIcon(latestFile['type']),
-                                                                        size: 16.sp,
-                                                                        color: Colors.blue[700],
-                                                                      ),
-                                                                      SizedBox(width: 8.w),
-                                                                      Expanded(
-                                                                        child: Text(
-                                                                          '${latestFile['filename']}',
-                                                                          style: TextStyle(
-                                                                            fontSize: 12.sp,
-                                                                            color: Colors.blue[700],
-                                                                            fontWeight: FontWeight.w500,
-                                                                          ),
-                                                                          maxLines: 1,
-                                                                          overflow: TextOverflow.ellipsis,
+                                                                      Text(
+                                                                        'Attachments:',
+                                                                        style: TextStyle(
+                                                                          fontSize: 11.sp,
+                                                                          fontWeight: FontWeight.bold,
+                                                                          color: Colors.grey[700],
                                                                         ),
                                                                       ),
+                                                                      SizedBox(height: 4.h),
+                                                                      
+                                                                      // Display files
+                                                                      ...files.map((file) {
+                                                                        String fileName = file['file_url']?.split('/').last ?? 'Unknown File';
+                                                                        return Padding(
+                                                                          padding: EdgeInsets.symmetric(vertical: 2.h),
+                                                                          child: Row(
+                                                                            children: [
+                                                                              Icon(
+                                                                                Icons.attachment,
+                                                                                size: 12.sp,
+                                                                                color: Colors.orange[600],
+                                                                              ),
+                                                                              SizedBox(width: 4.w),
+                                                                              Expanded(
+                                                                                child: Text(
+                                                                                  fileName,
+                                                                                  style: TextStyle(
+                                                                                    fontSize: 10.sp,
+                                                                                    color: Colors.grey[800],
+                                                                                  ),
+                                                                                  maxLines: 1,
+                                                                                  overflow: TextOverflow.ellipsis,
+                                                                                ),
+                                                                              ),
+                                                                            ],
+                                                                          ),
+                                                                        );
+                                                                      }).toList(),
+                                                                      
+                                                                      // Display images
+                                                                      ...images.map((image) {
+                                                                        String imageName = image['file_url']?.split('/').last ?? 'Unknown Image';
+                                                                        return Padding(
+                                                                          padding: EdgeInsets.symmetric(vertical: 2.h),
+                                                                          child: Row(
+                                                                            children: [
+                                                                              Icon(
+                                                                                Icons.image,
+                                                                                size: 12.sp,
+                                                                                color: Colors.purple[600],
+                                                                              ),
+                                                                              SizedBox(width: 4.w),
+                                                                              Expanded(
+                                                                                child: Text(
+                                                                                  imageName,
+                                                                                  style: TextStyle(
+                                                                                    fontSize: 10.sp,
+                                                                                    color: Colors.grey[800],
+                                                                                  ),
+                                                                                  maxLines: 1,
+                                                                                  overflow: TextOverflow.ellipsis,
+                                                                                ),
+                                                                              ),
+                                                                            ],
+                                                                          ),
+                                                                        );
+                                                                      }).toList(),
                                                                     ],
                                                                   ),
                                                                 ),
@@ -734,13 +869,16 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
                                                           ),
                                                         ),
                                                       ),
+                                                      
                                                       SizedBox(height: 8.h),
+                                                      
+                                                      // Date info
                                                       Row(
                                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                                         children: [
                                                           Expanded(
                                                             child: Text(
-                                                              'By: ${createdBy}',
+                                                              'Updated by: $createdBy',
                                                               style: TextStyle(
                                                                 fontSize: 10.sp,
                                                                 fontStyle: FontStyle.italic,
@@ -751,7 +889,9 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
                                                             ),
                                                           ),
                                                           Text(
-                                                            formatDateTime(latestWorkDetail['date']),
+                                                            formatDateTime(
+                                                              latestWorkDetail['date'],
+                                                            ),
                                                             style: TextStyle(
                                                               fontSize: 10.sp,
                                                               color: Colors.grey[700],
@@ -787,7 +927,7 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
                                         ),
 
                                         SizedBox(height: 12.h),
-                                        
+
                                         // Date information section
                                         Row(
                                           children: [
@@ -810,9 +950,9 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
                                             ),
                                           ],
                                         ),
-                                        
+
                                         SizedBox(height: 8.h),
-                                        
+
                                         // Updated info
                                         Container(
                                           padding: EdgeInsets.all(8.w),
@@ -893,184 +1033,110 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
     ],
   );
 }
-
-// Helper method for task date columns
-Widget _buildTaskDateColumn(String label, String date, IconData icon, Color color) {
-  return Container(
-    padding: EdgeInsets.all(8.w),
-    decoration: BoxDecoration(
-      color: color.withOpacity(0.2),
-      borderRadius: BorderRadius.circular(6),
-      border: Border.all(color: color.withOpacity(0.5)),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: 12.sp, color: color),
-            SizedBox(width: 4.w),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 9.sp,
-                fontWeight: FontWeight.w600,
-                color: color,
+  // Helper method for task date columns
+  Widget _buildTaskDateColumn(
+    String label,
+    String date,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      padding: EdgeInsets.all(8.w),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withOpacity(0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 12.sp, color: color),
+              SizedBox(width: 4.w),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 9.sp,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
               ),
-            ),
-          ],
-        ),
-        SizedBox(height: 2.h),
-        Text(
-          date,
-          style: TextStyle(
-            fontSize: 11.sp,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
+            ],
           ),
-        ),
-      ],
-    ),
-  );
-}
-
-  // Helper function to get the latest file
-  Map<String, dynamic>? getLatestFile(List<dynamic>? files) {
-    if (files == null || files.isEmpty) return null;
-
-    // Sort files by uploaded_at date (descending)
-    files.sort((a, b) {
-      final DateTime dateA = DateTime.parse(a['uploaded_at']);
-      final DateTime dateB = DateTime.parse(b['uploaded_at']);
-      return dateB.compareTo(dateA);
-    });
-
-    return files.first as Map<String, dynamic>;
-  }
-
-  // Helper function to get appropriate icon based on file type
-  IconData getFileIcon(String fileType) {
-    switch (fileType.toLowerCase()) {
-      case 'pdf':
-        return Icons.picture_as_pdf;
-      case 'jpg':
-      case 'jpeg':
-      case 'png':
-      case 'gif':
-        return Icons.image;
-      case 'doc':
-      case 'docx':
-        return Icons.description;
-      case 'xls':
-      case 'xlsx':
-        return Icons.table_chart;
-      case 'ppt':
-      case 'pptx':
-        return Icons.slideshow;
-      default:
-        return Icons.insert_drive_file;
-    }
+          SizedBox(height: 2.h),
+          Text(
+            date,
+            style: TextStyle(
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildTaskDetailView() {
-  final task = selectedTask.value;
-  final projectName = task['project_name'] ?? 'Unknown Project';
-  final taskName = task['task_name'] ?? 'Unnamed Task';
-  final description = task['description'] ?? 'No description available';
-  final startDate = formatDate(task['start_date']);
-  final endDate = formatDate(task['end_date']);
-  final status = task['status'] ?? 'unknown';
-  final createdAt = formatDateTime(task['createdAt']);
-  final updatedAt = formatDateTime(task['updatedAt']);
-  final assignedTo = task['assignedTo'] ?? [];
-  //final createdBy = task['created_by'] ?? 'Unknown User';
+    final task = selectedTask.value;
+    final projectName = task['project_name'] ?? 'Unknown Project';
+    final taskName = task['task_name'] ?? 'Unnamed Task';
+    final description = task['description'] ?? 'No description available';
+    final startDate = formatDate(task['start_date']);
+    final endDate = formatDate(task['end_date']);
+    final status = task['status'] ?? 'unknown';
+    final createdAt = formatDateTime(task['createdAt']);
+    final updatedAt = formatDateTime(task['updatedAt']);
+    final assignedTo = task['assignedTo'] ?? [];
+    //final createdBy = task['created_by'] ?? 'Unknown User';
 
-  // Get work details from task
-  final List<dynamic> workDetailsRaw =
-      task['work_details'] as List<dynamic>? ?? [];
-  final List<Map<String, dynamic>> workDetails =
-      List<Map<String, dynamic>>.from(workDetailsRaw);
+    // Get work details from task
+    final List<dynamic> workDetailsRaw =
+        task['work_details'] as List<dynamic>? ?? [];
+    final List<Map<String, dynamic>> workDetails =
+        List<Map<String, dynamic>>.from(workDetailsRaw);
 
-  // Get history from task if available
-  final List<dynamic> historyRaw = task['history'] as List<dynamic>? ?? [];
-  final List<Map<String, dynamic>> history = List<Map<String, dynamic>>.from(
-    historyRaw,
-  );
+    // Get history from task if available
+    final List<dynamic> historyRaw = task['history'] as List<dynamic>? ?? [];
+    final List<Map<String, dynamic>> history = List<Map<String, dynamic>>.from(
+      historyRaw,
+    );
 
-  // Process files from history and add to work details
-  if (history.isNotEmpty) {
-    // Map to track work detail IDs
-    final Map<String, int> workDetailIndexMap = {};
+    // Process files from history and add to work details
+    if (history.isNotEmpty) {
+      // Map to track work detail IDs
+      final Map<String, int> workDetailIndexMap = {};
 
-    // Create an index map for quick access to work details
-    for (int i = 0; i < workDetails.length; i++) {
-      final workDetailId = workDetails[i]['_id']?.toString();
-      if (workDetailId != null) {
-        workDetailIndexMap[workDetailId] = i;
+      // Create an index map for quick access to work details
+      for (int i = 0; i < workDetails.length; i++) {
+        final workDetailId = workDetails[i]['_id']?.toString();
+        if (workDetailId != null) {
+          workDetailIndexMap[workDetailId] = i;
+        }
       }
-    }
 
-    // Process history to find files
-    for (final entry in history) {
-      final String action = entry['action'] ?? '';
+      // Process history to find files
+      for (final entry in history) {
+        final String action = entry['action'] ?? '';
 
-      if (action == 'image_added' || action == 'file_added') {
-        final details = entry['details'] ?? {};
-        final List<dynamic> filesRaw = entry['files'] as List<dynamic>? ?? [];
+        if (action == 'image_added' || action == 'file_added') {
+          final details = entry['details'] ?? {};
+          final List<dynamic> filesRaw = entry['files'] as List<dynamic>? ?? [];
 
-        if (filesRaw.isNotEmpty) {
-          // Check if this file is related to work detail
-          final bool relatedToWorkDetail =
-              details['related_to_work_detail'] == true;
-          final String workDetailId =
-              details['work_detail_id']?.toString() ?? '';
+          if (filesRaw.isNotEmpty) {
+            // Check if this file is related to work detail
+            final bool relatedToWorkDetail =
+                details['related_to_work_detail'] == true;
+            final String workDetailId =
+                details['work_detail_id']?.toString() ?? '';
 
-          if (relatedToWorkDetail &&
-              workDetailId.isNotEmpty &&
-              workDetailIndexMap.containsKey(workDetailId)) {
-            // Direct match with work detail ID
-            final int workDetailIndex = workDetailIndexMap[workDetailId]!;
+            if (relatedToWorkDetail &&
+                workDetailId.isNotEmpty &&
+                workDetailIndexMap.containsKey(workDetailId)) {
+              // Direct match with work detail ID
+              final int workDetailIndex = workDetailIndexMap[workDetailId]!;
 
-            // Convert files to expected format
-            List<Map<String, dynamic>> formattedFiles =
-                filesRaw.map<Map<String, dynamic>>((file) {
-                  return {
-                    'id': file['_id']?.toString() ?? '',
-                    'name': file['filename'] ?? 'Unknown File',
-                    'description': file['caption'] ?? '',
-                    'size': 0, // Size might not be available
-                  };
-                }).toList();
-
-            // Add files to work detail
-            if (workDetails[workDetailIndex]['files'] == null) {
-              workDetails[workDetailIndex]['files'] = [];
-            }
-            workDetails[workDetailIndex]['files'].addAll(formattedFiles);
-          } else if (relatedToWorkDetail) {
-            // Try to match by timestamp if no direct ID match
-            final timestamp =
-                DateTime.tryParse(entry['timestamp'] ?? '') ?? DateTime.now();
-            int? closestIndex;
-            Duration closestDuration = Duration(
-              hours: 1,
-            ); // Max 1 hour difference
-
-            for (int i = 0; i < workDetails.length; i++) {
-              final workDetailDate =
-                  DateTime.tryParse(
-                    workDetails[i]['date']?.toString() ?? '',
-                  ) ??
-                  DateTime.now();
-              final difference = timestamp.difference(workDetailDate).abs();
-
-              if (difference < closestDuration) {
-                closestDuration = difference;
-                closestIndex = i;
-              }
-            }
-
-            if (closestIndex != null) {
               // Convert files to expected format
               List<Map<String, dynamic>> formattedFiles =
                   filesRaw.map<Map<String, dynamic>>((file) {
@@ -1083,448 +1149,499 @@ Widget _buildTaskDateColumn(String label, String date, IconData icon, Color colo
                   }).toList();
 
               // Add files to work detail
-              if (workDetails[closestIndex]['files'] == null) {
-                workDetails[closestIndex]['files'] = [];
+              if (workDetails[workDetailIndex]['files'] == null) {
+                workDetails[workDetailIndex]['files'] = [];
               }
-              workDetails[closestIndex]['files'].addAll(formattedFiles);
+              workDetails[workDetailIndex]['files'].addAll(formattedFiles);
+            } else if (relatedToWorkDetail) {
+              // Try to match by timestamp if no direct ID match
+              final timestamp =
+                  DateTime.tryParse(entry['timestamp'] ?? '') ?? DateTime.now();
+              int? closestIndex;
+              Duration closestDuration = Duration(
+                hours: 1,
+              ); // Max 1 hour difference
+
+              for (int i = 0; i < workDetails.length; i++) {
+                final workDetailDate =
+                    DateTime.tryParse(
+                      workDetails[i]['date']?.toString() ?? '',
+                    ) ??
+                    DateTime.now();
+                final difference = timestamp.difference(workDetailDate).abs();
+
+                if (difference < closestDuration) {
+                  closestDuration = difference;
+                  closestIndex = i;
+                }
+              }
+
+              if (closestIndex != null) {
+                // Convert files to expected format
+                List<Map<String, dynamic>> formattedFiles =
+                    filesRaw.map<Map<String, dynamic>>((file) {
+                      return {
+                        'id': file['_id']?.toString() ?? '',
+                        'name': file['filename'] ?? 'Unknown File',
+                        'description': file['caption'] ?? '',
+                        'size': 0, // Size might not be available
+                      };
+                    }).toList();
+
+                // Add files to work detail
+                if (workDetails[closestIndex]['files'] == null) {
+                  workDetails[closestIndex]['files'] = [];
+                }
+                workDetails[closestIndex]['files'].addAll(formattedFiles);
+              }
             }
           }
         }
       }
     }
-  }
 
-  // Sort work details by date (newest first)
-  workDetails.sort((a, b) {
-    final dateA =
-        a['date'] != null
-            ? DateTime.parse(a['date'].toString())
-            : DateTime(1900);
-    final dateB =
-        b['date'] != null
-            ? DateTime.parse(b['date'].toString())
-            : DateTime(1900);
-    return dateB.compareTo(dateA); // Newest first
-  });
+    // Sort work details by date (newest first)
+    workDetails.sort((a, b) {
+      final dateA =
+          a['date'] != null
+              ? DateTime.parse(a['date'].toString())
+              : DateTime(1900);
+      final dateB =
+          b['date'] != null
+              ? DateTime.parse(b['date'].toString())
+              : DateTime(1900);
+      return dateB.compareTo(dateA); // Newest first
+    });
 
-  // Use GetX to determine if we're on mobile view
-  bool isMobileView = Get.width < 800;
+    // Use GetX to determine if we're on mobile view
+    bool isMobileView = Get.width < 800;
 
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      // Header with back button
-      Container(
-        padding: EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.grey[900],
-          borderRadius: BorderRadius.only(
-            bottomLeft: Radius.circular(12),
-            bottomRight: Radius.circular(12),
-          ),
-        ),
-        child: Row(
-          children: [
-            IconButton(
-              icon: Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: closeTaskDetail,
-            ),
-            SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    taskName,
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      decoration: TextDecoration.none,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    projectName,
-                    style: TextStyle(
-                      fontSize: 16, 
-                      color: Colors.white70,
-                      decoration: TextDecoration.none,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: getStatusColor(status).withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: getStatusColor(status).withOpacity(0.5)),
-              ),
-              child: Text(
-                capitalizeStatus(status),
-                style: TextStyle(
-                  fontSize: 14,
-                  color: getStatusColor(status),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-
-      // Task details and history - Responsive layout
-      Expanded(
-        child:
-            isMobileView
-                // Mobile layout (vertical)
-                ? SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Task info card
-                      Padding(
-                        padding: EdgeInsets.all(16),
-                        child: _buildTaskInfoCard(
-                          status,
-                          description,
-                          startDate,
-                          endDate,
-                          createdAt,
-                          updatedAt,
-                          assignedTo,
-                        ),
-                      ),
-
-                      // Work Details Card
-                      Padding(
-                        padding: EdgeInsets.all(16),
-                        child: _buildWorkDetailsCard(),
-                      ),
-                    ],
-                  ),
-                )
-                // Desktop layout (horizontal)
-                : Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Left panel - Task details
-                    Expanded(
-                      flex: 3,
-                      child: SingleChildScrollView(
-                        padding: EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Task info card
-                            _buildTaskInfoCard(
-                              status,
-                              description,
-                              startDate,
-                              endDate,
-                              createdAt,
-                              updatedAt,
-                              assignedTo,
-                            ),
-                            SizedBox(height: 16),
-                            // Work Details Card
-                            _buildWorkDetailsCard(),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-      ),
-    ],);
-  
-}
-
-// Extract the Task Info Card to a separate method
-Widget _buildTaskInfoCard(
-  String status,
-  String description,
-  String startDate,
-  String endDate,
-  String createdAt,
-  String updatedAt,
-  List<dynamic> assignedTo,
-) {
-  return Card(
-    color: Color(0xff333333),
-    elevation: 8,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    child: Stack(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Main content
+        // Header with back button
         Container(
           padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.grey[900]!,
-                Colors.grey[800]!,
-              ],
+            color: Colors.grey[900],
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(12),
+              bottomRight: Radius.circular(12),
             ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
             children: [
-              // Header with task info title
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Task Information',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  SizedBox(width: 80), // Space for status container
-                ],
+              IconButton(
+                icon: Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: closeTaskDetail,
               ),
-              
-              SizedBox(height: 16),
-
-              // Description
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey[800],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey[600]!),
-                ),
+              SizedBox(width: 8),
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'DESCRIPTION',
+                      taskName,
                       style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.blue[300],
-                        letterSpacing: 1.2,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        decoration: TextDecoration.none,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    SizedBox(height: 8),
+                    SizedBox(height: 4),
                     Text(
-                      description,
-                      style: TextStyle(fontSize: 14, color: Colors.white),
-                    ),
-                  ],
-                ),
-              ),
-              
-              SizedBox(height: 16),
-
-              // User information
-              if (assignedTo.isNotEmpty)
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildUserColumn(
-                        'ASSIGNED TO',
-                        assignedTo.isNotEmpty ? assignedTo.first.toString() : 'Unassigned',
-                        Icons.assignment_ind,
-                        Colors.green,
-                      ),
-                    ),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: _buildUserColumn(
-                        'CREATED BY',
-                        'System', // You can replace with actual createdBy if available
-                        Icons.person_add,
-                        Colors.blue,
+                      projectName,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white70,
+                        decoration: TextDecoration.none,
                       ),
                     ),
                   ],
                 ),
-              
-              if (assignedTo.isNotEmpty) SizedBox(height: 16),
-
-              // Date information
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildDateColumn(
-                      'START DATE',
-                      startDate,
-                      Icons.calendar_today,
-                      Colors.orange,
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: _buildDateColumn(
-                      'DUE DATE',
-                      endDate,
-                      Icons.event,
-                      Colors.purple,
-                    ),
-                  ),
-                ],
               ),
-              
-              SizedBox(height: 16),
-
-              // Timestamps
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildDateColumn(
-                      'CREATED AT',
-                      createdAt,
-                      Icons.access_time,
-                      Colors.cyan,
-                    ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: getStatusColor(status).withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: getStatusColor(status).withOpacity(0.5),
                   ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: _buildDateColumn(
-                      'LAST UPDATED',
-                      updatedAt,
-                      Icons.update,
-                      Colors.amber,
-                    ),
+                ),
+                child: Text(
+                  capitalizeStatus(status),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: getStatusColor(status),
+                    fontWeight: FontWeight.bold,
                   ),
-                ],
+                ),
               ),
             ],
           ),
         ),
-        
-        // Status container spanning full height on the right side
-        Positioned(
-          top: 0,
-          right: 0,
-          bottom: 0,
-          child: Container(
-            width: 60,
-            decoration: BoxDecoration(
-              color: getStatusColor(status),
-              borderRadius: BorderRadius.only(
-                topRight: Radius.circular(12),
-                bottomRight: Radius.circular(12),
-              ),
-            ),
-            child: RotatedBox(
-              quarterTurns: 3,
-              child: Center(
-                child: Text(
-                  capitalizeStatus(status),
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: 1.2,
+
+        // Task details and history - Responsive layout
+        Expanded(
+          child:
+              isMobileView
+                  // Mobile layout (vertical)
+                  ? SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Task info card
+                        Padding(
+                          padding: EdgeInsets.all(16),
+                          child: _buildTaskInfoCard(
+                            status,
+                            description,
+                            startDate,
+                            endDate,
+                            createdAt,
+                            updatedAt,
+                            assignedTo,
+                          ),
+                        ),
+
+                        // Work Details Card
+                        Padding(
+                          padding: EdgeInsets.all(16),
+                          child: _buildWorkDetailsCard(),
+                        ),
+                      ],
+                    ),
+                  )
+                  // Desktop layout (horizontal)
+                  : Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Left panel - Task details
+                      Expanded(
+                        flex: 3,
+                        child: SingleChildScrollView(
+                          padding: EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Task info card
+                              _buildTaskInfoCard(
+                                status,
+                                description,
+                                startDate,
+                                endDate,
+                                createdAt,
+                                updatedAt,
+                                assignedTo,
+                              ),
+                              SizedBox(height: 16),
+                              // Work Details Card
+                              _buildWorkDetailsCard(),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-          ),
         ),
       ],
-    ),
-  );
-}
+    );
+  }
 
-Widget _buildUserColumn(String label, String username, IconData icon, Color color) {
-  return Container(
-    padding: EdgeInsets.all(8),
-    decoration: BoxDecoration(
-      color: color.withOpacity(0.2),
-      borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: color.withOpacity(0.5)),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: 14, color: color),
-            SizedBox(width: 4),
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: color,
-                ),
+  // Extract the Task Info Card to a separate method
+  Widget _buildTaskInfoCard(
+    String status,
+    String description,
+    String startDate,
+    String endDate,
+    String createdAt,
+    String updatedAt,
+    List<dynamic> assignedTo,
+  ) {
+    return Card(
+      color: Color(0xff333333),
+      elevation: 8,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Stack(
+        children: [
+          // Main content
+          Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Colors.grey[900]!, Colors.grey[800]!],
               ),
             ),
-          ],
-        ),
-        SizedBox(height: 4),
-        Text(
-          username,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
-    ),
-  );
-}
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header with task info title
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Task Information',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(width: 80), // Space for status container
+                  ],
+                ),
 
-Widget _buildDateColumn(String label, String date, IconData icon, Color color) {
-  return Container(
-    padding: EdgeInsets.all(8),
-    decoration: BoxDecoration(
-      color: color.withOpacity(0.2),
-      borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: color.withOpacity(0.5)),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: 14, color: color),
-            SizedBox(width: 4),
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: color,
+                SizedBox(height: 16),
+
+                // Description
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[800],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey[600]!),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'DESCRIPTION',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.blue[300],
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        description,
+                        style: TextStyle(fontSize: 14, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+
+                SizedBox(height: 16),
+
+                // User information
+                if (assignedTo.isNotEmpty)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildUserColumn(
+                          'ASSIGNED TO',
+                          assignedTo.isNotEmpty
+                              ? assignedTo.first.toString()
+                              : 'Unassigned',
+                          Icons.assignment_ind,
+                          Colors.green,
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: _buildUserColumn(
+                          'CREATED BY',
+                          'System', // You can replace with actual createdBy if available
+                          Icons.person_add,
+                          Colors.blue,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                if (assignedTo.isNotEmpty) SizedBox(height: 16),
+
+                // Date information
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildDateColumn(
+                        'START DATE',
+                        startDate,
+                        Icons.calendar_today,
+                        Colors.orange,
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: _buildDateColumn(
+                        'DUE DATE',
+                        endDate,
+                        Icons.event,
+                        Colors.purple,
+                      ),
+                    ),
+                  ],
+                ),
+
+                SizedBox(height: 16),
+
+                // Timestamps
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildDateColumn(
+                        'CREATED AT',
+                        createdAt,
+                        Icons.access_time,
+                        Colors.cyan,
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: _buildDateColumn(
+                        'LAST UPDATED',
+                        updatedAt,
+                        Icons.update,
+                        Colors.amber,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // Status container spanning full height on the right side
+          Positioned(
+            top: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              width: 60,
+              decoration: BoxDecoration(
+                color: getStatusColor(status),
+                borderRadius: BorderRadius.only(
+                  topRight: Radius.circular(12),
+                  bottomRight: Radius.circular(12),
+                ),
+              ),
+              child: RotatedBox(
+                quarterTurns: 3,
+                child: Center(
+                  child: Text(
+                    capitalizeStatus(status),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 1.2,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ),
             ),
-          ],
-        ),
-        SizedBox(height: 4),
-        Text(
-          date,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUserColumn(
+    String label,
+    String username,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      padding: EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 14, color: color),
+              SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 4),
+          Text(
+            username,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDateColumn(
+    String label,
+    String date,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      padding: EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 14, color: color),
+              SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 4),
+          Text(
+            date,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
 
   // Extract the date field to a separate method
   Widget _buildDateField(String label, IconData icon, String date) {
@@ -1578,324 +1695,321 @@ Widget _buildDateColumn(String label, String date, IconData icon, Color color) {
     );
   }
 
- Widget _buildWorkDetailsCard() {
-  // Inject the DownloadService using GetX
-  final DownloadService downloadService = Get.put(DownloadService());
+  Widget _buildWorkDetailsCard() {
+    // Inject the DownloadService using GetX
+    final DownloadService downloadService = Get.put(DownloadService());
 
-  // Use Obx to reactively rebuild when filterWorkDetails.value changes
-  return Obx(() {
-    // Use filterWorkDetails.value directly throughout the widget
-    return Card(
-      color: Color(0xff333333),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
-      child: Padding(
-        padding: EdgeInsets.all(16.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Work Details',
-                  style: TextStyle(
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+    // Use Obx to reactively rebuild when filterWorkDetails.value changes
+    return Obx(() {
+      // Use filterWorkDetails.value directly throughout the widget
+      return Card(
+        color: Color(0xff333333),
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
+        child: Padding(
+          padding: EdgeInsets.all(16.w),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Work Details',
+                    style: TextStyle(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
-                ),
-                Text(
-                  '${filterWorkDetails.value.length} ${filterWorkDetails.value.length == 1 ? 'Entry' : 'Entries'}',
-                  style: TextStyle(fontSize: 14.sp, color: Colors.white),
-                ),
-              ],
-            ),
-            SizedBox(height: 16.h),
+                  Text(
+                    '${filterWorkDetails.value.length} ${filterWorkDetails.value.length == 1 ? 'Entry' : 'Entries'}',
+                    style: TextStyle(fontSize: 14.sp, color: Colors.white),
+                  ),
+                ],
+              ),
+              SizedBox(height: 16.h),
 
-            if (filterWorkDetails.value.isEmpty)
-              Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24.h),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.work_outline,
-                        size: 48.sp,
-                        color: Colors.white,
-                      ),
-                      SizedBox(height: 16.h),
-                      Text(
-                        'No work details available',
-                        style: TextStyle(
-                          fontSize: 14.sp,
+              if (filterWorkDetails.value.isEmpty)
+                Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24.h),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.work_outline,
+                          size: 48.sp,
                           color: Colors.white,
-                          fontStyle: FontStyle.italic,
                         ),
-                      ),
-                    ],
+                        SizedBox(height: 16.h),
+                        Text(
+                          'No work details available',
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            color: Colors.white,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              )
-            else
-              ListView.separated(
-                shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
-                itemCount: filterWorkDetails.value.length,
-                separatorBuilder: (context, index) => Divider(height: 24.h),
-                itemBuilder: (context, index) {
-                  // Make sure to use .value consistently
-                  final item = filterWorkDetails.value[index];
+                )
+              else
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
+                  itemCount: filterWorkDetails.value.length,
+                  separatorBuilder: (context, index) => Divider(height: 24.h),
+                  itemBuilder: (context, index) {
+                    // Make sure to use .value consistently
+                    final item = filterWorkDetails.value[index];
 
-                  // Get description from the appropriate location in the structure
-                  final description =
-                      item['details']?['description'] ??
-                      item['description'] ??
-                      'No description';
+                    // Get description from the appropriate location in the structure
+                    final description =
+                        item['details']?['description'] ??
+                        item['description'] ??
+                        'No description';
 
-                  final date = formatDateTime(
-                    item['timestamp'] ?? item['date'],
-                  );
+                    final date = formatDateTime(
+                      item['timestamp'] ?? item['date'],
+                    );
 
-                  // Get hours spent - ensure it's parsed as a numeric value
-                  final hoursSpentRaw = item['details']?['hours_spent'] ?? 
-                                      item['hours_spent'] ?? 
-                                      0;
-                  // Convert to numeric safely
-                  final hoursSpent = hoursSpentRaw is String 
-                      ? double.tryParse(hoursSpentRaw) ?? 0 
-                      : (hoursSpentRaw is num ? hoursSpentRaw : 0);
+                    // Get hours spent - ensure it's parsed as a numeric value
+                    final hoursSpentRaw =
+                        item['details']?['hours_spent'] ??
+                        item['hours_spent'] ??
+                        0;
+                    // Convert to numeric safely
+                    final hoursSpent =
+                        hoursSpentRaw is String
+                            ? double.tryParse(hoursSpentRaw) ?? 0
+                            : (hoursSpentRaw is num ? hoursSpentRaw : 0);
 
-                  // Get user information and extract username
-                  final addedBy = item['performed_by'] ?? item['added_by'];
-                  String addedByName = '';
+                    // Get user information and extract username
+                    final addedBy = item['performed_by'] ?? item['added_by'];
+                    String addedByName = '';
 
-                  // Handle different ways the username might be stored
-                  if (addedBy is Map<String, dynamic>) {
-                    addedByName = addedBy['username'] ?? 'Unknown User';
-                  } else if (addedBy is String) {
-                    addedByName = addedBy;
-                  } else {
-                    addedByName = 'Unknown User';
-                  }
+                    // Handle different ways the username might be stored
+                    if (addedBy is Map<String, dynamic>) {
+                      addedByName = addedBy['username'] ?? 'Unknown User';
+                    } else if (addedBy is String) {
+                      addedByName = addedBy;
+                    } else {
+                      addedByName = 'Unknown User';
+                    }
 
-                  // Extract files from the API format
-                  List<Map<String, dynamic>> files = [];
+                    // Extract files from the API format
+                    List<Map<String, dynamic>> files = [];
 
-                  // Check if files exist in the history item structure
-                  if (item['files'] != null && item['files'] is List) {
-                    files = (item['files'] as List).map<Map<String, dynamic>>((file) {
-                      if (file is Map<String, dynamic>) {
-                        // Directly use the file structure as it appears in your data
-                        // Important: Use the '_id' field as the fileId for downloading
-                        return {
-                          'id': file['_id'] ?? '',
-                          'filename': file['filename'] ?? 'Unknown File',
-                          'caption': file['caption'] ?? '',
-                          'type': file['type'] ?? '',
-                        };
-                      } else {
-                        return {
-                          'id': '',
-                          'filename': 'Unknown File',
-                          'caption': '',
-                          'type': '',
-                        };
-                      }
-                    }).toList();
-                  }
+                    // Check if files exist in the history item structure
+                    if (item['files'] != null && item['files'] is List) {
+                      files =
+                          (item['files'] as List).map<Map<String, dynamic>>((
+                            file,
+                          ) {
+                            if (file is Map<String, dynamic>) {
+                              // Directly use the file structure as it appears in your data
+                              // Important: Use the '_id' field as the fileId for downloading
+                              return {
+                                'id': file['_id'] ?? '',
+                                'filename': file['filename'] ?? 'Unknown File',
+                                'caption': file['caption'] ?? '',
+                                'type': file['type'] ?? '',
+                              };
+                            } else {
+                              return {
+                                'id': '',
+                                'filename': 'Unknown File',
+                                'caption': '',
+                                'type': '',
+                              };
+                            }
+                          }).toList();
+                    }
 
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          CollaboratorAvatar(name: addedByName, size: 32.sp),
-                          SizedBox(width: 12.w),
-                          Expanded(
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            CollaboratorAvatar(name: addedByName, size: 32.sp),
+                            SizedBox(width: 12.w),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    addedByName,
+                                    style: TextStyle(
+                                      fontSize: 14.sp,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  Text(
+                                    date,
+                                    style: TextStyle(
+                                      fontSize: 12.sp,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (hoursSpent > 0)
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 8.w,
+                                  vertical: 4.h,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue[50],
+                                  borderRadius: BorderRadius.circular(4.r),
+                                  border: Border.all(
+                                    color: Colors.blue[300]!,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Text(
+                                  '$hoursSpent hrs',
+                                  style: TextStyle(
+                                    fontSize: 12.sp,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue[700],
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        SizedBox(height: 12.h),
+                        if (description.isNotEmpty)
+                          Container(
+                            width: double.infinity,
+                            padding: EdgeInsets.all(12.w),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[800],
+                              borderRadius: BorderRadius.circular(4.r),
+                              border: Border.all(color: Colors.grey[600]!),
+                            ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  addedByName,
-                                  style: TextStyle(
-                                    fontSize: 14.sp,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                Text(
-                                  date,
-                                  style: TextStyle(
-                                    fontSize: 12.sp,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (hoursSpent > 0)
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 8.w,
-                                vertical: 4.h,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.blue[50],
-                                borderRadius: BorderRadius.circular(4.r),
-                                border: Border.all(
-                                  color: Colors.blue[300]!,
-                                  width: 1,
-                                ),
-                              ),
-                              child: Text(
-                                '$hoursSpent hrs',
-                                style: TextStyle(
-                                  fontSize: 12.sp,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blue[700],
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      SizedBox(height: 12.h),
-                      if (description.isNotEmpty)
-                        Container(
-                          width: double.infinity,
-                          padding: EdgeInsets.all(12.w),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[800],
-                            borderRadius: BorderRadius.circular(4.r),
-                            border: Border.all(color: Colors.grey[600]!),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (description.isNotEmpty)
-                                Text(
-                                  description,
-                                  style: TextStyle(
-                                    fontSize: 14.sp,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              // Show files if present
-                              if (files.isNotEmpty) ...[
                                 if (description.isNotEmpty)
-                                  SizedBox(height: 12.h),
-                                Text(
-                                  'Attached Files',
-                                  style: TextStyle(
-                                    fontSize: 14.sp,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.white70,
+                                  Text(
+                                    description,
+                                    style: TextStyle(
+                                      fontSize: 14.sp,
+                                      color: Colors.white,
+                                    ),
                                   ),
-                                ),
-                                SizedBox(height: 8.h),
-                                ...files
-                                    .map(
-                                      (file) => _buildFileItem(
-                                        file,
-                                        downloadService,
-                                      ),
-                                    )
-                                    .toList(),
+                                // Show files if present
+                                if (files.isNotEmpty) ...[
+                                  if (description.isNotEmpty)
+                                    SizedBox(height: 12.h),
+                                  Text(
+                                    'Attached Files',
+                                    style: TextStyle(
+                                      fontSize: 14.sp,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                  SizedBox(height: 8.h),
+                                  ...files
+                                      .map(
+                                        (file) => _buildFileItem(
+                                          file,
+                                          downloadService,
+                                        ),
+                                      )
+                                      .toList(),
+                                ],
                               ],
-                            ],
+                            ),
                           ),
-                        ),
-                      SizedBox(height: 8.h),
-                    ],
-                  );
-                },
+                        SizedBox(height: 8.h),
+                      ],
+                    );
+                  },
+                ),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
+  Widget _buildFileItem(
+    Map<String, dynamic> file,
+    DownloadService downloadService,
+  ) {
+    final String fileName = file['filename'] ?? 'Unknown File';
+    final String fileType = file['type'] ?? '';
+    final String fileId = file['id'] ?? '';
+
+    // Choose icon based on file type
+    IconData fileIcon;
+    Color iconColor;
+
+    switch (fileType.toLowerCase()) {
+      case 'pdf':
+        fileIcon = Icons.picture_as_pdf;
+        iconColor = Colors.red[400]!;
+        break;
+      case 'image':
+        fileIcon = Icons.image;
+        iconColor = Colors.blue[400]!;
+        break;
+      case 'doc':
+      case 'docx':
+        fileIcon = Icons.description;
+        iconColor = Colors.blue[700]!;
+        break;
+      case 'xls':
+      case 'xlsx':
+        fileIcon = Icons.table_chart;
+        iconColor = Colors.green[600]!;
+        break;
+      default:
+        fileIcon = Icons.insert_drive_file;
+        iconColor = Colors.grey[400]!;
+    }
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: 8.h),
+      child: InkWell(
+        onTap: () {
+          // If fileId exists, trigger download and pass the fileName
+          if (fileId.isNotEmpty) {
+            downloadService.downloadFile(fileId, fileName: fileName);
+          }
+        },
+        borderRadius: BorderRadius.circular(4.r),
+        child: Container(
+          padding: EdgeInsets.symmetric(vertical: 8.h, horizontal: 12.w),
+          decoration: BoxDecoration(
+            color: Colors.grey[700],
+            borderRadius: BorderRadius.circular(4.r),
+          ),
+          child: Row(
+            children: [
+              Icon(fileIcon, size: 20.sp, color: iconColor),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: Text(
+                  fileName,
+                  style: TextStyle(fontSize: 12.sp, color: Colors.white),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-          ],
+              Icon(Icons.download, size: 18.sp, color: Colors.blue[300]),
+            ],
+          ),
         ),
       ),
     );
-  });
-}
-
-Widget _buildFileItem(Map<String, dynamic> file, DownloadService downloadService) {
-  final String fileName = file['filename'] ?? 'Unknown File';
-  final String fileType = file['type'] ?? '';
-  final String fileId = file['id'] ?? '';
-  
-  // Choose icon based on file type
-  IconData fileIcon;
-  Color iconColor;
-  
-  switch (fileType.toLowerCase()) {
-    case 'pdf':
-      fileIcon = Icons.picture_as_pdf;
-      iconColor = Colors.red[400]!;
-      break;
-    case 'image':
-      fileIcon = Icons.image;
-      iconColor = Colors.blue[400]!;
-      break;
-    case 'doc':
-    case 'docx':
-      fileIcon = Icons.description;
-      iconColor = Colors.blue[700]!;
-      break;
-    case 'xls':
-    case 'xlsx':
-      fileIcon = Icons.table_chart;
-      iconColor = Colors.green[600]!;
-      break;
-    default:
-      fileIcon = Icons.insert_drive_file;
-      iconColor = Colors.grey[400]!;
   }
-
-  return Padding(
-    padding: EdgeInsets.only(bottom: 8.h),
-    child: InkWell(
-      onTap: () {
-        // If fileId exists, trigger download and pass the fileName
-        if (fileId.isNotEmpty) {
-          downloadService.downloadFile(fileId, fileName: fileName);
-        }
-      },
-      borderRadius: BorderRadius.circular(4.r),
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: 8.h, horizontal: 12.w),
-        decoration: BoxDecoration(
-          color: Colors.grey[700],
-          borderRadius: BorderRadius.circular(4.r),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              fileIcon,
-              size: 20.sp,
-              color: iconColor,
-            ),
-            SizedBox(width: 8.w),
-            Expanded(
-              child: Text(
-                fileName,
-                style: TextStyle(
-                  fontSize: 12.sp,
-                  color: Colors.white,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            Icon(
-              Icons.download,
-              size: 18.sp,
-              color: Colors.blue[300],
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-}
 
   Widget _buildInfoRow(IconData icon, String text) {
     return Row(

@@ -23,6 +23,104 @@ class EmployeeList extends StatelessWidget {
         : _buildEmployeeListScreen());
   }
 
+  // Show rename confirmation dialog
+  void _showRenameDialog(Map<String, dynamic> employee) {
+    final id = employee['_id'] ?? '';
+    final currentName = employee['username'] ?? '';
+    final TextEditingController nameController = TextEditingController(text: currentName);
+    
+    Get.dialog(
+      AlertDialog(
+        title: Text(
+          'Rename Employee', 
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Enter new username for $currentName:',
+              style: TextStyle(color: Colors.black87),
+            ),
+            SizedBox(height: 16.h),
+            TextField(
+              controller: nameController,
+              decoration: InputDecoration(
+                labelText: 'New Username',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8.sp),
+                ),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 12.w,
+                  vertical: 12.h,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8.sp),
+          side: BorderSide(color: Colors.grey.shade300),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.black,
+            ),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: Colors.black54),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final newUsername = nameController.text.trim();
+              if (newUsername.isEmpty) {
+                Get.snackbar(
+                  "Error",
+                  "Username cannot be empty",
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: Colors.red,
+                  colorText: Colors.white,
+                );
+                return;
+              }
+              if (newUsername == currentName) {
+                Get.snackbar(
+                  "Error",
+                  "New username must be different from current username",
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: Colors.red,
+                  colorText: Colors.white,
+                );
+                return;
+              }
+              
+              Get.back();
+              await controller.renameEmployee(id, currentName, newUsername);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.black,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(4.sp),
+              ),
+            ),
+            child: Text('Rename'),
+          ),
+        ],
+        actionsPadding: EdgeInsets.symmetric(horizontal: 16.sp, vertical: 8.sp),
+      ),
+      barrierDismissible: false,
+    );
+  }
+
   // Show delete confirmation dialog with GetX
   void _showDeleteConfirmation(Map<String, dynamic> employee) {
     final id = employee['_id'] ?? '';
@@ -268,6 +366,15 @@ class EmployeeList extends StatelessWidget {
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
+                          // Rename Button
+                          IconButton(
+                            icon: Icon(Icons.drive_file_rename_outline, color: Colors.black, size: 20.sp),
+                            onPressed: () {
+                              controller.setSelectedEmployee(employee);
+                              _showRenameDialog(employee);
+                            },
+                            tooltip: 'Rename Employee',
+                          ),
                           IconButton(
                             icon: Icon(Icons.delete, color: Colors.black, size: 20.sp,),
                             onPressed: () {
