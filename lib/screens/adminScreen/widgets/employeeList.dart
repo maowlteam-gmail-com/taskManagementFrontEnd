@@ -277,6 +277,28 @@ class EmployeeList extends StatelessWidget {
                             tooltip: 'Delete Employee',
                           ),
                           SizedBox(width: 4.w),
+                          // History Button
+                          ElevatedButton(
+                            onPressed: () {
+                              controller.setSelectedEmployee(employee);
+                              Get.toNamed('/employee-history', arguments: {
+                                'employee': employee,
+                              });
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey[800],
+                              foregroundColor: Colors.white,
+                              padding: EdgeInsets.symmetric(horizontal: 12.sp),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(4.sp),
+                              ),
+                            ),
+                            child: Text(
+                              'History',
+                              style: TextStyle(fontSize: 12.sp),
+                            ),
+                          ),
+                          SizedBox(width: 4.w),
                           ElevatedButton(
                             onPressed: () {
                               controller.setSelectedEmployee(employee);

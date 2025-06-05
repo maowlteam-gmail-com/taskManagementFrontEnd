@@ -5,6 +5,8 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:maowl/screens/adminScreen/controller/adminScreenController.dart';
 import 'package:maowl/screens/adminScreen/view/adminScreen.dart';
+import 'package:maowl/screens/adminScreen/widgets/employeeHistoryScreen.dart';
+import 'package:maowl/screens/adminScreen/widgets/taskHistoryWidget.dart';
 import 'package:maowl/screens/employeeScreen/controller/employeeController.dart';
 import 'package:maowl/screens/employeeScreen/view/employeeScreen.dart';
 import 'package:maowl/screens/employeeScreen/widgets/taskDetails.dart';
@@ -108,7 +110,17 @@ class MyApp extends StatelessWidget {
               page: () => TaskUpdateScreen(task: Get.arguments,),             
               middlewares: [AuthMiddleware()],
               transition: Transition.fadeIn,
-            ),                     
+            ),  
+             GetPage(
+              name: '/taskHistory',
+              page: () => TaskHistoryWidget(),             
+              middlewares: [AuthMiddleware()],
+              transition: Transition.fadeIn,
+            ),    
+            GetPage(
+  name: '/employee-history',
+  page: () => EmployeeHistoryScreen(),
+),                
           ],
         );
       },

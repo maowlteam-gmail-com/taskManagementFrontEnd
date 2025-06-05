@@ -12,7 +12,7 @@ class CustomNumButtom extends StatelessWidget {
     return Container(
       width: 217.w,
       height: 219.h,
-      decoration: BoxDecoration(
+      decoration: BoxDecoration(  
         color: Colors.black,
         borderRadius: BorderRadius.only(
             bottomLeft: Radius.circular(20),

@@ -145,6 +145,19 @@ class SideMenu extends StatelessWidget {
                     },
                   ),
                   _buildMenuItem(
+                    icon: Icons.task,
+                    text: 'Create Project',
+                    isIconOnly: isIconOnly,
+                    isMobile: isMobileView,
+                    iconSize: iconSize,
+                    fontSize: fontSize,
+                    layout: menuLayout,
+                    onTap: () {
+                      controller.setSelectedOption("Create Project");
+                      if (Get.width < 600) Get.back();
+                    },
+                  ),
+                  _buildMenuItem(
                     icon: Icons.group,
                     text: 'Show Team',
                     isIconOnly: isIconOnly,
@@ -154,6 +167,23 @@ class SideMenu extends StatelessWidget {
                     layout: menuLayout,
                     onTap: () {
                       controller.setSelectedOption("Show Team");
+
+                      // Refresh employee data
+                      controller.fetchEmployees();
+
+                      if (Get.width < 600) Get.back();
+                    },
+                  ),
+                     _buildMenuItem(
+                    icon: Icons.work,
+                    text: 'Projects',
+                    isIconOnly: isIconOnly,
+                    isMobile: isMobileView,
+                    iconSize: iconSize,
+                    fontSize: fontSize,
+                    layout: menuLayout,
+                    onTap: () {
+                      controller.setSelectedOption("Projects");
 
                       // Refresh employee data
                       controller.fetchEmployees();

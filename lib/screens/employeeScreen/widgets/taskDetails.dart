@@ -125,7 +125,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
             responseData['data'] != null &&
             responseData['data'] is Map<String, dynamic>) {
           setState(() {
-            // _task = responseData['data'];
             _task = Map<String, dynamic>.from(responseData['data'] as Map);
           });
 
@@ -181,7 +180,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     if (!mounted) return;
 
     try {
-      // Use toNamed consistently with preventDuplicates
       final result = await Get.toNamed('/taskUpdate', arguments: _task);
 
       if (!mounted) return;
@@ -215,6 +213,37 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
         );
       }
     }
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 8.h),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120.w,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 14.sp,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -291,102 +320,120 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                 ],
               ),
             ),
-            // IconButton(
-            //   icon: const Icon(Icons.update),
-            //   tooltip: 'Update Today\'s Progress',
-            //   onPressed: _navigateToUpdateScreen,
-            // ),
-            // IconButton(
-            //   icon: const Icon(Icons.refresh),
-            //   tooltip: 'Refresh Task Data',
-            //   onPressed: refreshTaskData,
-            // ),
           ],
         ),
-        body:
-            isLoading
-                ? Center(child: CircularProgressIndicator())
-                : SafeArea(
-                  child: Container(
-                    color: Colors.white,
-                    child: SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // (UI building remains the same)
-                          // [Omitted for brevity: unchanged UI code in your original script]
-                          // Work History Section
-                          Padding(
-                            padding: EdgeInsets.all(20.sp),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Work History',
-                                  style: TextStyle(
-                                    fontSize: 18.sp,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(height: 12.h),
-                                if (workDetails.isEmpty)
-                                  Center(
-                                    child: Padding(
-                                      padding: EdgeInsets.symmetric(
-                                        vertical: 30.h,
-                                      ),
-                                      child: Column(
-                                        children: [
-                                          Icon(
-                                            Icons.history_outlined,
-                                            size: 48.sp,
-                                            color: Colors.grey[400],
-                                          ),
-                                          SizedBox(height: 16.h),
-                                          Text(
-                                            'No work history available',
-                                            style: TextStyle(
-                                              fontSize: 16.sp,
-                                              color: Colors.grey[600],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  )
-                                else
-                                  ListView.builder(
-                                    shrinkWrap: true,
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    itemCount: workDetails.length,
-                                    itemBuilder: (context, index) {
-                                      if (index >= workDetails.length) {
-                                        return Container();
-                                      }
-                                      try {
-                                        final workDetail =
-                                            workDetails[index]
-                                                as Map<String, dynamic>;
-                                        return TaskHistoryItemWidget(
-                                          key: ValueKey("work_detail_$index"),
-                                          workDetail: workDetail,
-                                          isLast:
-                                              index == workDetails.length - 1,
-                                        );
-                                      } catch (e) {
-                                        return Container();
-                                      }
-                                    },
-                                  ),
-                              ],
-                            ),
+        body: isLoading
+            ? Center(child: CircularProgressIndicator())
+            : SafeArea(
+                child: Container(
+                  color: Colors.white,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Task Information Section
+                        Container(
+                          margin: EdgeInsets.all(20.sp),
+                          padding: EdgeInsets.all(16.sp),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[50],
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey[200]!),
                           ),
-                        ],
-                      ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Task Information',
+                                style: TextStyle(
+                                  fontSize: 18.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              SizedBox(height: 16.h),
+                              // _buildInfoRow('Project:', projectName),
+                              _buildInfoRow('Task:', taskName),
+                              _buildInfoRow('Description:', description),
+                              _buildInfoRow('Start Date:', startDate),
+                              _buildInfoRow('End Date:', endDate),
+                              _buildInfoRow('Created By:', createdBy),
+                              _buildInfoRow('Assigned To:', assignedTo),
+                              _buildInfoRow('Created:', createdAt),
+                              _buildInfoRow('Updated:', updatedAt),
+                            ],
+                          ),
+                        ),
+                        
+                        // Work History Section
+                        Padding(
+                          padding: EdgeInsets.all(20.sp),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Work History',
+                                style: TextStyle(
+                                  fontSize: 18.sp,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              SizedBox(height: 12.h),
+                              if (workDetails.isEmpty)
+                                Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      vertical: 30.h,
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        Icon(
+                                          Icons.history_outlined,
+                                          size: 48.sp,
+                                          color: Colors.grey[400],
+                                        ),
+                                        SizedBox(height: 16.h),
+                                        Text(
+                                          'No work history available',
+                                          style: TextStyle(
+                                            fontSize: 16.sp,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                              else
+                                ListView.builder(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: workDetails.length,
+                                  itemBuilder: (context, index) {
+                                    if (index >= workDetails.length) {
+                                      return Container();
+                                    }
+                                    try {
+                                      final workDetail =
+                                          workDetails[index] as Map<String, dynamic>;
+                                      return TaskHistoryItemWidget(
+                                        key: ValueKey("work_detail_$index"),
+                                        workDetail: workDetail,
+                                        isLast: index == workDetails.length - 1,
+                                      );
+                                    } catch (e) {
+                                      return Container();
+                                    }
+                                  },
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
+              ),
         floatingActionButton: FloatingActionButton(
           onPressed: _navigateToUpdateScreen,
           backgroundColor: Colors.black,
@@ -428,4 +475,3 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     }
   }
 }
-

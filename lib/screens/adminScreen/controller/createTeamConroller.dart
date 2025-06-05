@@ -9,10 +9,15 @@ class CreateTeamController extends GetxController {
   final passwordController = TextEditingController();
   final Dio _dio = Dio();
   final box = GetStorage();
+  var obscureText = true.obs;
 
   void clearFields() {
     nameController.clear();
     passwordController.clear();
+  }
+
+   void togglePasswordVisbility() {
+    obscureText.value = !obscureText.value;
   }
 
   void submitTeam() async {

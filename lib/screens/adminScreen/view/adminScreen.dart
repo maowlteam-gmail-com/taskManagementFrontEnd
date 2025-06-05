@@ -4,7 +4,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:maowl/screens/adminScreen/controller/adminScreenController.dart';
 import 'package:maowl/screens/adminScreen/view/homeScreen.dart';
 import 'package:maowl/screens/adminScreen/widgets/addTask.dart';
+import 'package:maowl/screens/adminScreen/widgets/createProject.dart';
 import 'package:maowl/screens/adminScreen/widgets/createTeam.dart';
+import 'package:maowl/screens/adminScreen/widgets/projects.dart';
 import 'package:maowl/screens/adminScreen/widgets/sideMenu.dart';
 import 'package:maowl/screens/adminScreen/widgets/employeeList.dart';
 
@@ -83,7 +85,10 @@ class AdminScreen extends StatelessWidget {
                             return CreateTeamWidget();
                           case "Create Task":
                             return CreateTaskContent();
-
+                          case "Projects":
+                             return Projects();
+                          case "Create Project":
+                            return CreateProject();
                           default:
                             return Center(child: HomeScreen());
                         }

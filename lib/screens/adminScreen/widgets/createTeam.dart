@@ -8,7 +8,7 @@ import 'package:maowl/screens/siteScreen/widgets/customButtom.dart';
 class CreateTeamWidget extends StatelessWidget {
   final CreateTeamController controller = Get.put(CreateTeamController());
 
-   CreateTeamWidget({super.key});
+  CreateTeamWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -20,11 +20,7 @@ class CreateTeamWidget extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(20.r),
           boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 10,
-              spreadRadius: 1,
-            ),
+            BoxShadow(color: Colors.black12, blurRadius: 10, spreadRadius: 1),
           ],
         ),
         child: Column(
@@ -34,7 +30,7 @@ class CreateTeamWidget extends StatelessWidget {
             Text(
               'Create Team Member',
               style: TextStyle(
-                fontSize: 24.sp, 
+                fontSize: 24.sp,
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
               ),
@@ -57,22 +53,32 @@ class CreateTeamWidget extends StatelessWidget {
               ),
             ),
             SizedBox(height: 20.h),
-            TextField(
-              controller: controller.passwordController,
-              decoration: InputDecoration(
-                labelText: 'Password',
-                labelStyle: TextStyle(color: Colors.black54),
-                border: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.black),
+            Obx(
+              () => TextField(
+                controller: controller.passwordController,
+
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  labelStyle: TextStyle(color: Colors.black54),
+                  border: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.black),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.black, width: 2),
+                  ),
+                  prefixIcon: Icon(Icons.lock, color: Colors.black54),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      controller.obscureText.value
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                      color: Colors.black54,
+                    ),
+                    onPressed: () => controller.togglePasswordVisbility(),
+                  ),
                 ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.black, width: 2),
-                ),
-                prefixIcon: Icon(Icons.lock, color: Colors.black54),
-                // helperText: 'Enter a secure password',
-                // helperStyle: TextStyle(color: Colors.black45),
+                obscureText: controller.obscureText.value,
               ),
-              obscureText: true,
             ),
             SizedBox(height: 30.h),
             SizedBox(
