@@ -16,10 +16,6 @@ class CreateProjectController extends GetxController {
   var endDate = ''.obs;
   var isLoading = false.obs;
 
-  @override
-  void onInit() {
-    super.onInit();
-  }
 
   // Getter methods for form validation
   bool get isFormValid => 

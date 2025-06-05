@@ -530,7 +530,7 @@ class TaskHistoryWidget extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: 8.h),
-                  ...item.files!.map((file) => _buildFileItem(file)).toList(),
+                  ...item.files!.map((file) => _buildFileItem(file)),
                 ],
               ],
             ),

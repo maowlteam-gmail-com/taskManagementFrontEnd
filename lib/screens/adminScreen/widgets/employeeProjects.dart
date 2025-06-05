@@ -130,7 +130,7 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
                   .where((item) => item['action'] == 'work_detail_added')
                   .toList();
 
-          print("Work detail items: ${filterWorkDetails}");
+          print("Work detail items: $filterWorkDetails");
           print("work details lemgth : ${filterWorkDetails.length}");
         } else {
           taskHistory.value = [];
@@ -831,7 +831,7 @@ Widget _buildTasksGridView() {
                                                                             ],
                                                                           ),
                                                                         );
-                                                                      }).toList(),
+                                                                      }),
                                                                       
                                                                       // Display images
                                                                       ...images.map((image) {
@@ -860,7 +860,7 @@ Widget _buildTasksGridView() {
                                                                             ],
                                                                           ),
                                                                         );
-                                                                      }).toList(),
+                                                                      }),
                                                                     ],
                                                                   ),
                                                                 ),
@@ -1922,7 +1922,7 @@ Widget _buildTasksGridView() {
                                           downloadService,
                                         ),
                                       )
-                                      .toList(),
+                                      ,
                                 ],
                               ],
                             ),

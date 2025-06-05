@@ -135,11 +135,11 @@ class ProjectCard extends StatelessWidget {
   final VoidCallback onDelete;
 
   const ProjectCard({
-    Key? key,
+    super.key,
     required this.project,
     required this.onTap,
     required this.onDelete,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
