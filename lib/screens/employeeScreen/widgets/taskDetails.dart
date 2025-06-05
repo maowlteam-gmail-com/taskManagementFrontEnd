@@ -37,6 +37,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     if (dateString == null) return 'N/A';
     try {
       final date = DateTime.parse(dateString);
+      print('Parsed date: $date'); // Debugging line
       return DateFormat('MMM d, yyyy').format(date);
     } catch (e) {
       return 'Invalid Date';
