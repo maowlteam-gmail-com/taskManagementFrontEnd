@@ -51,6 +51,7 @@ class TaskController extends GetxController {
   // Method to refresh employee list
   Future<void> refreshEmployeeList() async {
     print("Refreshing employee list...");
+    print("code updated");
     employees.clear();
     employeeIds.clear();
     selectedEmployee.value = null;
