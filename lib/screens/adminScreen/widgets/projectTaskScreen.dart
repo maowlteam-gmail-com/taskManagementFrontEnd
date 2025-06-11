@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:maowl/screens/adminScreen/controller/projectController.dart';
 import 'package:maowl/screens/adminScreen/controller/projectTaskController.dart';
 import 'package:maowl/screens/adminScreen/controller/taskHistoryController.dart';
 import 'package:maowl/screens/adminScreen/model/taskModel.dart';
@@ -11,8 +12,10 @@ class TaskWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ProjectTaskController taskController = Get.find<ProjectTaskController>();
-     
+    final ProjectTaskController taskController =
+        Get.find<ProjectTaskController>();
+    final Projectcontroller projectController = Get.find<Projectcontroller>();
+
     return Column(
       children: [
         // Header with back button and project name
@@ -33,25 +36,155 @@ class TaskWidget extends StatelessWidget {
               ),
               SizedBox(width: 8.w),
               Expanded(
-                child: Obx(() => Text(
-                  taskController.selectedProjectName.value.isEmpty 
-                      ? 'Project Tasks' 
-                      : '${taskController.selectedProjectName.value} - Tasks',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.bold,
+                child: Obx(
+                  () => Text(
+                    taskController.selectedProjectName.value.isEmpty
+                        ? 'Project Tasks'
+                        : '${taskController.selectedProjectName.value} - Tasks',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                )),
+                ),
               ),
             ],
           ),
         ),
-        
+
+        // Project Information Section
+        Obx(() {
+          // Get the current project details
+          final projectId = taskController.selectedProjectId.value;
+          final project = projectController.getProjectById(projectId);
+
+          if (project != null) {
+            return Container(
+              margin: EdgeInsets.all(16.w),
+              child: Card(
+                color: Color(0xff333333),
+                elevation: 8,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Stack(
+                  children: [
+                    // Main content
+                    Container(
+                      padding: EdgeInsets.all(16.w),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Colors.grey[900]!, Colors.grey[800]!],
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Header with project info title
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Project Information',
+                                style: TextStyle(
+                                  fontSize: 20.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              SizedBox(
+                                width: 80.w,
+                              ), // Space for status container
+                            ],
+                          ),
+
+                          SizedBox(height: 16.h),
+
+                          // Description
+                          Container(
+                            width: double.infinity,
+                            padding: EdgeInsets.all(12.w),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[800],
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.grey[600]!),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'DESCRIPTION',
+                                  style: TextStyle(
+                                    fontSize: 12.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.blue[300],
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                                SizedBox(height: 8.h),
+                                Text(
+                                  project.description.isNotEmpty
+                                      ? project.description
+                                      : 'No description available',
+                                  style: TextStyle(
+                                    fontSize: 14.sp,
+                                    color: Colors.white,
+                                    height: 1.3,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Status container spanning full height on the right side
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 60.w,
+                        decoration: BoxDecoration(
+                          color: _getStatusColor(project.status),
+                          borderRadius: BorderRadius.only(
+                            topRight: Radius.circular(12),
+                            bottomRight: Radius.circular(12),
+                          ),
+                        ),
+                        child: RotatedBox(
+                          quarterTurns: 3,
+                          child: Center(
+                            child: Text(
+                              project.status.toUpperCase().replaceAll('_', ' '),
+                              style: TextStyle(
+                                fontSize: 11.sp,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                letterSpacing: 1.2,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          } else {
+            return SizedBox.shrink();
+          }
+        }),
+
         // Task grid view
-        Expanded(
-          child: _buildTaskGridView(taskController),
-        ),
+        Expanded(child: _buildTaskGridView(taskController)),
       ],
     );
   }
@@ -60,9 +193,7 @@ class TaskWidget extends StatelessWidget {
     return Obx(() {
       if (controller.isLoading.value) {
         return const Center(
-          child: CircularProgressIndicator(
-            color: Colors.grey,
-          ),
+          child: CircularProgressIndicator(color: Colors.grey),
         );
       }
 
@@ -71,11 +202,7 @@ class TaskWidget extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.error_outline,
-                size: 48.sp,
-                color: Colors.red,
-              ),
+              Icon(Icons.error_outline, size: 48.sp, color: Colors.red),
               SizedBox(height: 16.h),
               Text(
                 controller.errorMessage.value,
@@ -138,27 +265,31 @@ class TaskWidget extends StatelessWidget {
     });
   }
 
-  void _navigateToTaskHistory(TaskModel task, ProjectTaskController projectController) {
+  void _navigateToTaskHistory(
+    TaskModel task,
+    ProjectTaskController projectController,
+  ) {
     try {
       // Clean up existing TaskHistoryController if it exists
       if (Get.isRegistered<TaskHistoryController>()) {
         Get.delete<TaskHistoryController>();
       }
-      
+
       // Create new TaskHistoryController
-      final TaskHistoryController historyController = Get.put(TaskHistoryController());
-      
+      final TaskHistoryController historyController = Get.put(
+        TaskHistoryController(),
+      );
+
       // Set the task information with project context
       historyController.selectTask(
-        task.id, 
+        task.id,
         task.taskName,
         projectId: projectController.selectedProjectId.value,
         projectName: projectController.selectedProjectName.value,
       );
-      
+
       // Navigate to task history (using Get.to instead of Get.offNamed to maintain navigation stack)
       Get.toNamed('/taskHistory');
-      
     } catch (e) {
       print('Error navigating to task history: $e');
       Get.snackbar(
@@ -170,17 +301,49 @@ class TaskWidget extends StatelessWidget {
       );
     }
   }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return Colors.orange;
+      case 'in_progress':
+      case 'in progress':
+        return Colors.blue;
+      case 'completed':
+        return Colors.green;
+      case 'cancelled':
+        return Colors.red;
+      case 'warning':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  IconData _getStatusIcon(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return Icons.pending;
+      case 'in_progress':
+      case 'in progress':
+        return Icons.play_circle;
+      case 'completed':
+        return Icons.check_circle;
+      case 'cancelled':
+        return Icons.cancel;
+      case 'warning':
+        return Icons.warning;
+      default:
+        return Icons.help;
+    }
+  }
 }
 
 class TaskCard extends StatelessWidget {
   final TaskModel task;
   final VoidCallback onTap;
 
-  const TaskCard({
-    super.key,
-    required this.task,
-    required this.onTap,
-  });
+  const TaskCard({super.key, required this.task, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -203,10 +366,7 @@ class TaskCard extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
-                    Colors.grey[900]!,
-                    Colors.grey[800]!,
-                  ],
+                  colors: [Colors.grey[900]!, Colors.grey[800]!],
                 ),
               ),
               child: Column(
@@ -231,9 +391,9 @@ class TaskCard extends StatelessWidget {
                       SizedBox(width: 80.w), // Space for status container
                     ],
                   ),
-                  
+
                   SizedBox(height: 16.h),
-                  
+
                   // User information
                   Row(
                     children: [
@@ -259,7 +419,7 @@ class TaskCard extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Status container spanning full height on the right side
             Positioned(
               top: 0,
@@ -276,7 +436,7 @@ class TaskCard extends StatelessWidget {
                 ),
                 child: RotatedBox(
                   quarterTurns: 3,
-                  child: Center( 
+                  child: Center(
                     child: Text(
                       task.status.toUpperCase().replaceAll('_', ' '),
                       style: TextStyle(
@@ -297,7 +457,12 @@ class TaskCard extends StatelessWidget {
     );
   }
 
-  Widget _buildUserColumn(String label, String username, IconData icon, Color color) {
+  Widget _buildUserColumn(
+    String label,
+    String username,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: EdgeInsets.all(8.w),
       decoration: BoxDecoration(

@@ -5,15 +5,15 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:dio/dio.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:maowl/screens/adminScreen/controller/downloadService.dart';
 import 'package:maowl/screens/employeeScreen/controller/employeeProjectController.dart';
 import 'package:maowl/screens/employeeScreen/widgets/employeeProjects.dart';
-import 'package:maowl/screens/employeeScreen/widgets/taskHistory.dart';
 
 class TaskDetailScreen extends StatefulWidget {
   final employeeProjectController = Get.find<EmployeeProjectsController>();
   final Map<String, dynamic> task;
 
-   TaskDetailScreen({super.key, required this.task});
+  TaskDetailScreen({super.key, required this.task});
 
   @override
   State<TaskDetailScreen> createState() => _TaskDetailScreenState();
@@ -25,12 +25,18 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   final box = GetStorage();
   bool isLoading = false;
 
+  // Add DownloadService
+  late final DownloadService _downloadService;
+
   @override
   void initState() {
     super.initState();
     _task = Map<String, dynamic>.from(
       widget.task,
     ); // Create a copy to avoid reference issues
+
+    // Initialize DownloadService
+    _downloadService = Get.put(DownloadService());
   }
 
   String formatDate(String? dateString) {
@@ -188,7 +194,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       if (result != null) {
         if (result is Map<String, dynamic>) {
           setState(() {
-            _task = result; 
+            _task = result;
           });
           Get.snackbar(
             'Success',
@@ -236,10 +242,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
           Expanded(
             child: Text(
               value,
-              style: TextStyle(
-                fontSize: 14.sp,
-                color: Colors.black87,
-              ),
+              style: TextStyle(fontSize: 14.sp, color: Colors.black87),
             ),
           ),
         ],
@@ -247,6 +250,173 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     );
   }
 
+  // Updated method to build attachment widgets with download functionality
+  Widget _buildAttachmentsSection(List<dynamic>? attachments) {
+    if (attachments == null || attachments.isEmpty) {
+      return SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(height: 12.h),
+        Text(
+          'Attachments (${attachments.length}):',
+          style: TextStyle(
+            fontSize: 14.sp,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[700],
+          ),
+        ),
+        SizedBox(height: 8.h),
+        Column(
+          children: attachments
+              .map((attachment) => _buildAttachmentItem(attachment))
+              .toList(),
+        ),
+      ],
+    );
+  }
+
+  // Updated attachment item with proper download functionality
+ // Updated attachment item with proper download functionality
+Widget _buildAttachmentItem(dynamic attachment) {
+  if (attachment is! Map<String, dynamic>) return SizedBox.shrink();
+
+  final fileName = attachment['filename'] ?? 
+                  attachment['fileName'] ?? 
+                  attachment['originalName'] ?? 
+                  'Unknown File';
+  
+  // Fix: Use 'file_id' which matches your API response structure
+  final fileId = attachment['file_id'] ?? 
+                 attachment['_id'] ?? 
+                 attachment['id'] ?? 
+                 attachment['fileId'] ?? 
+                 '';
+  
+  final fileType = attachment['type'] ?? 
+                   attachment['fileType'] ?? 
+                   attachment['mimetype'] ?? 
+                   '';
+
+  // Debug print to see what we're getting
+  print('Attachment data: $attachment');
+  print('Extracted fileId: $fileId');
+  print('Extracted fileName: $fileName');
+  print('Extracted fileType: $fileType');
+
+  // Choose icon based on file type
+  IconData fileIcon;
+  Color iconColor;
+  
+  String typeCheck = fileType.toLowerCase();
+  if (typeCheck.contains('image')) {
+    fileIcon = Icons.image;
+    iconColor = Colors.blue[400]!;
+  } else if (typeCheck.contains('pdf')) {
+    fileIcon = Icons.picture_as_pdf;
+    iconColor = Colors.red[400]!;
+  } else if (typeCheck.contains('doc')) {
+    fileIcon = Icons.description;
+    iconColor = Colors.blue[700]!;
+  } else if (typeCheck.contains('xls') || typeCheck.contains('excel')) {
+    fileIcon = Icons.table_chart;
+    iconColor = Colors.green[600]!;
+  } else if (typeCheck.contains('video')) {
+    fileIcon = Icons.video_file;
+    iconColor = Colors.purple[400]!;
+  } else if (typeCheck.contains('audio')) {
+    fileIcon = Icons.audio_file;
+    iconColor = Colors.orange[400]!;
+  } else {
+    fileIcon = Icons.insert_drive_file;
+    iconColor = Colors.grey[400]!;
+  }
+
+  return Padding(
+    padding: EdgeInsets.only(bottom: 8.h),
+    child: InkWell(
+      onTap: () async {
+        if (fileId.isNotEmpty) {
+          print('Attempting to download file with ID: $fileId');
+          // Download file using the DownloadService
+          await _downloadService.downloadFile(fileId, fileName: fileName);
+        } else {
+          print('File ID is empty. Attachment structure: $attachment');
+          Get.snackbar(
+            'Error',
+            'File ID not available for download',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.red[100],
+            colorText: Colors.red[800],
+            duration: Duration(seconds: 2),
+          );
+        }
+      },
+      borderRadius: BorderRadius.circular(8.r),
+      child: Container(
+        padding: EdgeInsets.all(12.w),
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(8.r),
+          border: Border.all(color: Colors.grey[300]!),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              fileIcon,
+              size: 24.sp,
+              color: iconColor,
+            ),
+            SizedBox(width: 12.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    fileName,
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (fileType.isNotEmpty) ...[
+                    SizedBox(height: 2.h),
+                    Text(
+                      fileType.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 10.sp,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            SizedBox(width: 8.w),
+            Container(
+              padding: EdgeInsets.all(6.w),
+              decoration: BoxDecoration(
+                color: Colors.blue[600],
+                borderRadius: BorderRadius.circular(6.r),
+              ),
+              child: Icon(
+                Icons.download,
+                size: 18.sp,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
   @override
   Widget build(BuildContext context) {
     try {
@@ -256,7 +426,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       final startDate = formatDate(_task['start_date']);
       final endDate = formatDate(_task['end_date']);
       final status = _task['status'] ?? 'unknown';
-      // final createdAt = formatDate(_task['createdAt']);
       final updatedAt = formatDate(_task['updatedAt']);
 
       String createdBy = 'Unknown';
@@ -288,11 +457,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
           foregroundColor: Colors.white,
           actions: [
             Container(
-              margin: EdgeInsets.only(right: 100),
-              width: 150,
+              margin: EdgeInsets.only(right: 100.w),
+              width: 150.w,
               decoration: BoxDecoration(
                 color: getStatusColor(status),
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(2.r),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -306,7 +475,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                     ),
                     decoration: BoxDecoration(
                       border: Border.all(color: Colors.white, width: 1.5),
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(4.r),
                     ),
                     child: Text(
                       status,
@@ -338,7 +507,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                           padding: EdgeInsets.all(16.sp),
                           decoration: BoxDecoration(
                             color: Colors.grey[50],
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(12.r),
                             border: Border.all(color: Colors.grey[200]!),
                           ),
                           child: Column(
@@ -353,19 +522,17 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                                 ),
                               ),
                               SizedBox(height: 16.h),
-                              // _buildInfoRow('Project:', projectName),
                               _buildInfoRow('Task:', taskName),
                               _buildInfoRow('Description:', description),
                               _buildInfoRow('Start Date:', startDate),
                               _buildInfoRow('End Date:', endDate),
                               _buildInfoRow('Created By:', createdBy),
                               _buildInfoRow('Assigned To:', assignedTo),
-                              // _buildInfoRow('Created:', createdAt),
                               _buildInfoRow('Updated:', updatedAt),
                             ],
                           ),
                         ),
-                        
+
                         // Work History Section
                         Padding(
                           padding: EdgeInsets.all(20.sp),
@@ -415,12 +582,59 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                                       return Container();
                                     }
                                     try {
-                                      final workDetail =
-                                          workDetails[index] as Map<String, dynamic>;
-                                      return TaskHistoryItemWidget(
-                                        key: ValueKey("work_detail_$index"),
-                                        workDetail: workDetail,
-                                        isLast: index == workDetails.length - 1,
+                                      final workDetail = workDetails[index]
+                                          as Map<String, dynamic>;
+
+                                      return Container(
+                                        margin: EdgeInsets.only(bottom: 16.h),
+                                        padding: EdgeInsets.all(16.w),
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey[50],
+                                          borderRadius: BorderRadius.circular(12.r),
+                                          border: Border.all(
+                                            color: Colors.grey[200]!,
+                                          ),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            // Date and time
+                                            if (workDetail['date'] != null)
+                                              Text(
+                                                formatDate(
+                                                  workDetail['date'].toString(),
+                                                ),
+                                                style: TextStyle(
+                                                  fontSize: 12.sp,
+                                                  color: Colors.grey[600],
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            SizedBox(height: 8.h),
+
+                                            // Description
+                                            if (workDetail['description'] !=
+                                                    null &&
+                                                workDetail['description']
+                                                    .toString()
+                                                    .isNotEmpty)
+                                              Text(
+                                                workDetail['description']
+                                                    .toString(),
+                                                style: TextStyle(
+                                                  fontSize: 14.sp,
+                                                  color: Colors.black87,
+                                                ),
+                                              ),
+
+                                            // Attachments with download functionality
+                                            _buildAttachmentsSection(
+                                              workDetail['attachments'] ??
+                                                  workDetail['files'],
+                                            ),
+                                          ],
+                                        ),
                                       );
                                     } catch (e) {
                                       return Container();

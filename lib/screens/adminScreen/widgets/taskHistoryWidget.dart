@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:maowl/screens/adminScreen/controller/taskHistoryController.dart';
 import 'package:maowl/screens/adminScreen/model/taskHistoryResponse.dart';
+import 'package:maowl/screens/adminScreen/controller/downloadService.dart';
 
 class TaskHistoryWidget extends StatelessWidget {
   const TaskHistoryWidget({super.key});
@@ -121,7 +122,7 @@ class TaskHistoryWidget extends StatelessWidget {
               _buildTaskInfoCard(taskHistoryData.task, controller),
               SizedBox(height: 16.h),
               
-              // Work Details Card
+              // Work Details Card - Updated version
               _buildWorkDetailsCard(taskHistoryData.history, controller),
             ],
           ),
@@ -349,7 +350,11 @@ class TaskHistoryWidget extends StatelessWidget {
     );
   }
 
+  // Updated _buildWorkDetailsCard method
   Widget _buildWorkDetailsCard(List<HistoryItem> history, TaskHistoryController controller) {
+    // Inject the DownloadService using GetX
+    final DownloadService downloadService = Get.put(DownloadService());
+
     return Card(
       color: Color(0xff333333),
       elevation: 8,
@@ -413,7 +418,7 @@ class TaskHistoryWidget extends StatelessWidget {
                 ),
                 itemBuilder: (context, index) {
                   final item = history[index];
-                  return _buildHistoryItem(item, controller);
+                  return _buildHistoryItem(item, controller, downloadService);
                 },
               ),
           ],
@@ -421,137 +426,194 @@ class TaskHistoryWidget extends StatelessWidget {
       ),
     );
   }
-
-  Widget _buildHistoryItem(HistoryItem item, TaskHistoryController controller) {
-    final hoursSpent = double.tryParse(item.details?.hoursSpent ?? '0') ?? 0;
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            // User avatar
-            CircleAvatar(
-              radius: 16.sp,
-              backgroundColor: Colors.blue[400],
-              child: Text(
-                item.performedBy.username.isNotEmpty 
-                    ? item.performedBy.username[0].toUpperCase()
-                    : 'U',
-                style: TextStyle(
-                  fontSize: 12.sp,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+Widget _buildHistoryItem(HistoryItem item, TaskHistoryController controller, DownloadService downloadService) {
+  final hoursSpent = double.tryParse(item.details?.hoursSpent ?? '0') ?? 0;
+  
+  // Check if there's any meaningful content to display
+  final hasDescription = item.details?.description != null && item.details!.description.trim().isNotEmpty;
+  final hasFiles = item.details?.files != null && item.details!.files!.isNotEmpty;
+  final hasComment = item.comment.trim().isNotEmpty;
+  
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        children: [
+          // User avatar
+          CircleAvatar(
+            radius: 16.sp,
+            backgroundColor: Colors.blue[400],
+            child: Text(
+              item.performedBy.username.isNotEmpty 
+                  ? item.performedBy.username[0].toUpperCase()
+                  : 'U',
+              style: TextStyle(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
             ),
-            SizedBox(width: 12.w),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.performedBy.username,
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  Text(
-                    controller.formatDateTime(item.timestamp),
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      color: Colors.white70,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (hoursSpent > 0)
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: 8.w,
-                  vertical: 4.h,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.blue[50],
-                  borderRadius: BorderRadius.circular(4.r),
-                  border: Border.all(
-                    color: Colors.blue[300]!,
-                    width: 1,
-                  ),
-                ),
-                child: Text(
-                  '$hoursSpent hrs',
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue[700],
-                  ),
-                ),
-              ),
-          ],
-        ),
-        SizedBox(height: 12.h),
-        
-        // Work details
-        if (item.details != null)
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(12.w),
-            decoration: BoxDecoration(
-              color: Colors.grey[800],
-              borderRadius: BorderRadius.circular(8.r),
-              border: Border.all(color: Colors.grey[600]!),
-            ),
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (item.details!.description.isNotEmpty)
-                  Text(
-                    item.details!.description,
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      color: Colors.white,
-                    ),
+                Text(
+                  item.performedBy.username,
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
-                
-                // Show files if present
-                if (item.files != null && item.files!.isNotEmpty) ...[
-                  if (item.details!.description.isNotEmpty)
-                    SizedBox(height: 12.h),
-                  Text(
-                    'Attached Files',
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white70,
-                    ),
+                ),
+                Text(
+                  controller.formatDateTime(item.timestamp),
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: Colors.white70,
                   ),
-                  SizedBox(height: 8.h),
-                  ...item.files!.map((file) => _buildFileItem(file)),
-                ],
+                ),
               ],
             ),
           ),
-      ],
-    );
-  }
+          if (hoursSpent > 0)
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: 8.w,
+                vertical: 4.h,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.blue[50],
+                borderRadius: BorderRadius.circular(4.r),
+                border: Border.all(
+                  color: Colors.blue[300]!,
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                '$hoursSpent hrs',
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue[700],
+                ),
+              ),
+            ),
+        ],
+      ),
+      SizedBox(height: 12.h),
+      
+      // Work details - always show container if there's any content
+      if (hasDescription || hasFiles || hasComment)
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(12.w),
+          decoration: BoxDecoration(
+            color: Colors.grey[800],
+            borderRadius: BorderRadius.circular(8.r),
+            border: Border.all(color: Colors.grey[600]!),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Description section
+              if (hasDescription) ...[
+                Text(
+                  'Description:',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white70,
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  item.details!.description,
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    color: Colors.white,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+              
+              // Files section
+              if (hasFiles) ...[
+                if (hasDescription) SizedBox(height: 12.h),
+                Text(
+                  'Attached Files (${item.details!.files!.length})',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white70,
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                ...item.details!.files!.map((file) => _buildFileItem(file, downloadService)),
+              ],
+              
+              // Comment section (if you want to show comments separately)
+              if (hasComment) ...[
+                if (hasDescription || hasFiles) SizedBox(height: 12.h),
+                Text(
+                  'Comment:',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white70,
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  item.comment,
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    color: Colors.white,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      
+      // Show a minimal entry if only hours are logged without description/files/comments
+      if (!hasDescription && !hasFiles && !hasComment && hoursSpent > 0)
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(12.w),
+          decoration: BoxDecoration(
+            color: Colors.grey[800],
+            borderRadius: BorderRadius.circular(8.r),
+            border: Border.all(color: Colors.grey[600]!),
+          ),
+          child: Text(
+            'Time logged without additional details',
+            style: TextStyle(
+              fontSize: 14.sp,
+              color: Colors.white70,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ),
+    ],
+  );
+}
 
-  Widget _buildFileItem(FileItem file) {
+  Widget _buildFileItem(FileItem file, DownloadService downloadService) {
     // Choose icon based on file type
     IconData fileIcon;
     Color iconColor;
     
     switch (file.type.toLowerCase()) {
-      case 'pdf':
-        fileIcon = Icons.picture_as_pdf;
-        iconColor = Colors.red[400]!;
-        break;
       case 'image':
         fileIcon = Icons.image;
         iconColor = Colors.blue[400]!;
+        break;
+      case 'pdf':
+        fileIcon = Icons.picture_as_pdf;
+        iconColor = Colors.red[400]!;
         break;
       case 'doc':
       case 'docx':
@@ -571,40 +633,64 @@ class TaskHistoryWidget extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.only(bottom: 8.h),
       child: InkWell(
-        onTap: () {
-          // Handle file download
-          print('Download file: ${file.filename}');
+        onTap: () async {
+          // Download file using the file_id
+          await downloadService.downloadFile(file.fileId, fileName: file.filename);
         },
-        borderRadius: BorderRadius.circular(4.r),
+        borderRadius: BorderRadius.circular(8.r),
         child: Container(
-          padding: EdgeInsets.symmetric(vertical: 8.h, horizontal: 12.w),
+          padding: EdgeInsets.all(12.w),
           decoration: BoxDecoration(
             color: Colors.grey[700],
-            borderRadius: BorderRadius.circular(4.r),
+            borderRadius: BorderRadius.circular(8.r),
+            border: Border.all(color: Colors.grey[500]!),
           ),
           child: Row(
             children: [
               Icon(
                 fileIcon,
-                size: 20.sp,
+                size: 24.sp,
                 color: iconColor,
               ),
-              SizedBox(width: 8.w),
+              SizedBox(width: 12.w),
               Expanded(
-                child: Text(
-                  file.filename,
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    color: Colors.white,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      file.filename,
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: 2.h),
+                    Text(
+                      file.type.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 10.sp,
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              Icon(
-                Icons.download,
-                size: 18.sp,
-                color: Colors.blue[300],
+              SizedBox(width: 8.w),
+              Container(
+                padding: EdgeInsets.all(6.w),
+                decoration: BoxDecoration(
+                  color: Colors.blue[600],
+                  borderRadius: BorderRadius.circular(6.r),
+                ),
+                child: Icon(
+                  Icons.download,
+                  size: 18.sp,
+                  color: Colors.white,
+                ),
               ),
             ],
           ),

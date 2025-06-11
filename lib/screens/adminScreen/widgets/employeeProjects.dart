@@ -1694,7 +1694,6 @@ Widget _buildTasksGridView() {
       ],
     );
   }
-
   Widget _buildWorkDetailsCard() {
     // Inject the DownloadService using GetX
     final DownloadService downloadService = Get.put(DownloadService());
@@ -1770,6 +1769,9 @@ Widget _buildTasksGridView() {
                         item['description'] ??
                         'No description';
 
+                    // Get caption from details
+                    final caption = item['details']?['caption'] ?? '';
+
                     final date = formatDateTime(
                       item['timestamp'] ?? item['date'],
                     );
@@ -1798,33 +1800,28 @@ Widget _buildTasksGridView() {
                       addedByName = 'Unknown User';
                     }
 
-                    // Extract files from the API format
+                    // Extract files from the API format - CORRECTED APPROACH
                     List<Map<String, dynamic>> files = [];
 
-                    // Check if files exist in the history item structure
-                    if (item['files'] != null && item['files'] is List) {
-                      files =
-                          (item['files'] as List).map<Map<String, dynamic>>((
-                            file,
-                          ) {
-                            if (file is Map<String, dynamic>) {
-                              // Directly use the file structure as it appears in your data
-                              // Important: Use the '_id' field as the fileId for downloading
-                              return {
-                                'id': file['_id'] ?? '',
-                                'filename': file['filename'] ?? 'Unknown File',
-                                'caption': file['caption'] ?? '',
-                                'type': file['type'] ?? '',
-                              };
-                            } else {
-                              return {
-                                'id': '',
-                                'filename': 'Unknown File',
-                                'caption': '',
-                                'type': '',
-                              };
-                            }
-                          }).toList();
+                    // Check if files exist in the details structure (correct according to API response)
+                    if (item['details']?['files'] != null && item['details']['files'] is List) {
+                      files = (item['details']['files'] as List).map<Map<String, dynamic>>((file) {
+                        if (file is Map<String, dynamic>) {
+                          return {
+                            'id': file['file_id'] ?? '', // Use file_id from API response
+                            'filename': file['filename'] ?? 'Unknown File',
+                            'url': file['url'] ?? '', // Store the URL for downloading
+                            'type': file['type'] ?? '',
+                          };
+                        } else {
+                          return {
+                            'id': '',
+                            'filename': 'Unknown File',
+                            'url': '',
+                            'type': '',
+                          };
+                        }
+                      }).toList();
                     }
 
                     return Column(
@@ -1882,7 +1879,7 @@ Widget _buildTasksGridView() {
                           ],
                         ),
                         SizedBox(height: 12.h),
-                        if (description.isNotEmpty)
+                        if (description.isNotEmpty || caption.isNotEmpty || files.isNotEmpty)
                           Container(
                             width: double.infinity,
                             padding: EdgeInsets.all(12.w),
@@ -1894,7 +1891,17 @@ Widget _buildTasksGridView() {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                if (description.isNotEmpty)
+                                // Show description
+                                if (description.isNotEmpty) ...[
+                                  Text(
+                                    'Description:',
+                                    style: TextStyle(
+                                      fontSize: 12.sp,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                  SizedBox(height: 4.h),
                                   Text(
                                     description,
                                     style: TextStyle(
@@ -1902,27 +1909,44 @@ Widget _buildTasksGridView() {
                                       color: Colors.white,
                                     ),
                                   ),
-                                // Show files if present
-                                if (files.isNotEmpty) ...[
-                                  if (description.isNotEmpty)
-                                    SizedBox(height: 12.h),
+                                ],
+                                
+                                // Show caption if present
+                                if (caption.isNotEmpty) ...[
+                                  if (description.isNotEmpty) SizedBox(height: 8.h),
                                   Text(
-                                    'Attached Files',
+                                    'Caption:',
+                                    style: TextStyle(
+                                      fontSize: 12.sp,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                  SizedBox(height: 4.h),
+                                  Text(
+                                    caption,
                                     style: TextStyle(
                                       fontSize: 14.sp,
-                                      fontWeight: FontWeight.w500,
+                                      color: Colors.white,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                ],
+                                
+                                // Show files if present
+                                if (files.isNotEmpty) ...[
+                                  if (description.isNotEmpty || caption.isNotEmpty)
+                                    SizedBox(height: 12.h),
+                                  Text(
+                                    'Attached Files (${files.length})',
+                                    style: TextStyle(
+                                      fontSize: 12.sp,
+                                      fontWeight: FontWeight.w600,
                                       color: Colors.white70,
                                     ),
                                   ),
                                   SizedBox(height: 8.h),
-                                  ...files
-                                      .map(
-                                        (file) => _buildFileItem(
-                                          file,
-                                          downloadService,
-                                        ),
-                                      )
-                                      ,
+                                  ...files.map((file) => _buildWorkDetailFileItem(file)).toList(),
                                 ],
                               ],
                             ),
@@ -1939,92 +1963,99 @@ Widget _buildTasksGridView() {
     });
   }
 
-  Widget _buildFileItem(
-    Map<String, dynamic> file,
-    DownloadService downloadService,
-  ) {
-    final String fileName = file['filename'] ?? 'Unknown File';
+  // Updated file item builder to handle the new structure
+  Widget _buildWorkDetailFileItem(Map<String, dynamic> file) {
+    // Inject the DownloadService using GetX inside the method
+    final DownloadService downloadService = Get.find<DownloadService>();
+    final String filename = file['filename'] ?? 'Unknown File';
     final String fileType = file['type'] ?? '';
-    final String fileId = file['id'] ?? '';
-
-    // Choose icon based on file type
-    IconData fileIcon;
-    Color iconColor;
-
-    switch (fileType.toLowerCase()) {
-      case 'pdf':
-        fileIcon = Icons.picture_as_pdf;
-        iconColor = Colors.red[400]!;
-        break;
-      case 'image':
-        fileIcon = Icons.image;
-        iconColor = Colors.blue[400]!;
-        break;
-      case 'doc':
-      case 'docx':
-        fileIcon = Icons.description;
-        iconColor = Colors.blue[700]!;
-        break;
-      case 'xls':
-      case 'xlsx':
-        fileIcon = Icons.table_chart;
-        iconColor = Colors.green[600]!;
-        break;
-      default:
-        fileIcon = Icons.insert_drive_file;
-        iconColor = Colors.grey[400]!;
+    final String fileUrl = file['url'] ?? '';
+    
+    // Get appropriate icon based on file type
+    IconData getFileIcon(String type) {
+      switch (type.toLowerCase()) {
+        case 'image':
+        case 'jpg':
+        case 'jpeg':
+        case 'png':
+        case 'gif':
+          return Icons.image;
+        case 'pdf':
+          return Icons.picture_as_pdf;
+        case 'doc':
+        case 'docx':
+          return Icons.description;
+        case 'video':
+        case 'mp4':
+        case 'avi':
+          return Icons.video_file;
+        default:
+          return Icons.attach_file;
+      }
     }
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: 8.h),
-      child: InkWell(
-        onTap: () {
-          // If fileId exists, trigger download and pass the fileName
-          if (fileId.isNotEmpty) {
-            downloadService.downloadFile(fileId, fileName: fileName);
-          }
-        },
+    return Container(
+      margin: EdgeInsets.only(bottom: 8.h),
+      padding: EdgeInsets.all(8.w),
+      decoration: BoxDecoration(
+        color: Colors.grey[700],
         borderRadius: BorderRadius.circular(4.r),
-        child: Container(
-          padding: EdgeInsets.symmetric(vertical: 8.h, horizontal: 12.w),
-          decoration: BoxDecoration(
-            color: Colors.grey[700],
-            borderRadius: BorderRadius.circular(4.r),
+        border: Border.all(color: Colors.grey[600]!),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            getFileIcon(fileType),
+            size: 20.sp,
+            color: Colors.white70,
           ),
-          child: Row(
-            children: [
-              Icon(fileIcon, size: 20.sp, color: iconColor),
-              SizedBox(width: 8.w),
-              Expanded(
-                child: Text(
-                  fileName,
-                  style: TextStyle(fontSize: 12.sp, color: Colors.white),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  filename,
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
-              Icon(Icons.download, size: 18.sp, color: Colors.blue[300]),
-            ],
+                if (fileType.isNotEmpty)
+                  Text(
+                    fileType.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 11.sp,
+                      color: Colors.white70,
+                    ),
+                  ),
+              ],
+            ),
           ),
-        ),
+          GestureDetector(
+            onTap: () async {
+              if (file['id'].isNotEmpty) {
+                // Use the file_id for download, not the URL
+                await downloadService.downloadFile(file['id'], fileName: filename);
+              }
+            },
+            child: Container(
+              padding: EdgeInsets.all(6.w),
+              decoration: BoxDecoration(
+                color: Colors.blue[600],
+                borderRadius: BorderRadius.circular(4.r),
+              ),
+              child: Icon(
+                Icons.download,
+                size: 16.sp,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String text) {
-    return Row(
-      children: [
-        Icon(icon, size: 14.sp, color: Colors.white),
-        SizedBox(width: 4.w),
-        Expanded(
-          child: Text(
-            text,
-            style: TextStyle(fontSize: 12.sp, color: Colors.white),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
   }
-}

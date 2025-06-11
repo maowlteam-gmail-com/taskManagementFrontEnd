@@ -311,17 +311,17 @@ class EmployeeProjects extends StatelessWidget {
     final isTablet = constraints.maxWidth >= 600 && constraints.maxWidth < 1024;
     
     int crossAxisCount = 1;
-    double childAspectRatio = 0.75; // Increased height by reducing aspect ratio
+    double childAspectRatio = 0.65; // Made taller to accommodate attachments
     
     if (isMobile) {
       crossAxisCount = 1;
-      childAspectRatio = 0.75; // Taller cards for mobile
+      childAspectRatio = 0.65; // Taller cards for mobile
     } else if (isTablet) {
       crossAxisCount = 2;
-      childAspectRatio = 0.85; // Taller cards for tablet
+      childAspectRatio = 0.75; // Taller cards for tablet
     } else {
       crossAxisCount = 3;
-      childAspectRatio = 0.9; // Taller cards for desktop
+      childAspectRatio = 0.8; // Taller cards for desktop
     }
 
     return GridView.builder(
@@ -407,7 +407,17 @@ class _TaskCard extends StatelessWidget {
       assignedTo: task['assigned_to']?['username'] ?? 'Unassigned',
       createdBy: task['created_by']?['username'] ?? 'Unknown',
       latestWorkDetail: latestWorkDetail,
+      attachments: _extractAttachments(latestWorkDetail),
     );
+  }
+
+  List<Map<String, dynamic>> _extractAttachments(Map<String, dynamic>? workDetail) {
+    if (workDetail == null) return [];
+    
+    final files = workDetail['files'] as List<dynamic>?;
+    if (files == null || files.isEmpty) return [];
+    
+    return files.map((file) => file as Map<String, dynamic>).toList();
   }
 
   void _onTaskTap() {
@@ -429,6 +439,10 @@ class _TaskCard extends StatelessWidget {
           SizedBox(height: 12.h),
           _buildWorkDetailsSection(taskInfo),
           SizedBox(height: 12.h),
+          if (taskInfo.attachments.isNotEmpty) ...[
+            _buildAttachmentsSection(taskInfo),
+            SizedBox(height: 12.h),
+          ],
           _buildDateSection(taskInfo),
           SizedBox(height: 8.h),
           _buildUpdateInfo(taskInfo),
@@ -550,24 +564,23 @@ class _TaskCard extends StatelessWidget {
   }
 
   Widget _buildWorkDetailsSection(_TaskInfo taskInfo) {
-    return Expanded(
-      child: Container(
-        padding: EdgeInsets.all(12.w),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: taskInfo.latestWorkDetail != null
-            ? _buildWorkDetailContent(taskInfo)
-            : _buildNoWorkDetailContent(),
+    return Container(
+      height: 120.h, // Fixed height for work details
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
+      child: taskInfo.latestWorkDetail != null
+          ? _buildWorkDetailContent(taskInfo)
+          : _buildNoWorkDetailContent(),
     );
   }
 
@@ -695,6 +708,111 @@ class _TaskCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAttachmentsSection(_TaskInfo taskInfo) {
+    return Container(
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.attach_file_rounded,
+                size: 14.sp,
+                color: Colors.grey[600],
+              ),
+              SizedBox(width: 6.w),
+              Text(
+                'Attachments:',
+                style: TextStyle(
+                  fontSize: 11.sp,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[700],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8.h),
+          ...taskInfo.attachments.map((attachment) => _buildAttachmentItem(attachment)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAttachmentItem(Map<String, dynamic> attachment) {
+    final filename = attachment['filename'] ?? 'Unknown file';
+    final fileType = attachment['type'] ?? 'unknown';
+    
+    return Padding(
+      padding: EdgeInsets.only(bottom: 4.h),
+      child: Row(
+        children: [
+          _buildFileTypeIcon(fileType),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Text(
+              filename,
+              style: TextStyle(
+                fontSize: 10.sp,
+                color: Colors.grey[700],
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFileTypeIcon(String fileType) {
+    IconData iconData;
+    Color iconColor;
+    
+    switch (fileType.toLowerCase()) {
+      case 'image':
+        iconData = Icons.image_outlined;
+        iconColor = Colors.green[600]!;
+        break;
+      case 'pdf':
+        iconData = Icons.picture_as_pdf_outlined;
+        iconColor = Colors.red[600]!;
+        break;
+      case 'doc':
+      case 'docx':
+        iconData = Icons.description_outlined;
+        iconColor = Colors.blue[600]!;
+        break;
+      case 'xls':
+      case 'xlsx':
+        iconData = Icons.table_chart_outlined;
+        iconColor = Colors.green[700]!;
+        break;
+      default:
+        iconData = Icons.insert_drive_file_outlined;
+        iconColor = Colors.grey[600]!;
+    }
+    
+    return Container(
+      padding: EdgeInsets.all(4.w),
+      decoration: BoxDecoration(
+        color: iconColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Icon(
+        iconData,
+        size: 12.sp,
+        color: iconColor,
       ),
     );
   }
@@ -850,6 +968,7 @@ class _TaskInfo {
   final String assignedTo;
   final String createdBy;
   final Map<String, dynamic>? latestWorkDetail;
+  final List<Map<String, dynamic>> attachments;
 
   _TaskInfo({
     required this.projectName,
@@ -861,5 +980,6 @@ class _TaskInfo {
     required this.assignedTo,
     required this.createdBy,
     this.latestWorkDetail,
+    required this.attachments,
   });
 }

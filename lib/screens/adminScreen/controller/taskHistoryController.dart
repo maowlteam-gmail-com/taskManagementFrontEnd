@@ -1,4 +1,3 @@
-
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -144,17 +143,11 @@ class TaskHistoryController extends GetxController {
     fetchTaskHistory(taskId);
   }
 
-  // Enhanced back navigation method
+  // Fixed back navigation method - don't clear state before navigation
   void backToTasks() {
     try {
-      // Clear the current state
-      _clearHistoryState();
-      
       // Check if we have project context to navigate back to
       if (selectedProjectId.value.isNotEmpty) {
-        // Navigate back to TaskWidget with proper project context
-        Get.back();
-        
         // Ensure ProjectTaskController has the correct project selected
         if (Get.isRegistered<ProjectTaskController>()) {
           final projectController = Get.find<ProjectTaskController>();
@@ -162,10 +155,13 @@ class TaskHistoryController extends GetxController {
             projectController.selectProject(selectedProjectId.value, selectedProjectName.value);
           }
         }
-      } else {
-        // Fallback: just go back
-        Get.back();
       }
+      
+      // Navigate back
+      Get.back();
+      
+      // Clear the state after navigation
+      _clearHistoryState();
     } catch (e) {
       print('Error in backToTasks: $e');
       // Fallback navigation
@@ -176,10 +172,11 @@ class TaskHistoryController extends GetxController {
   // Alternative method to navigate to tasks route directly
   void backToTasksRoute() {
     try {
-      _clearHistoryState();
-      
-      // Navigate to tasks route directly
+      // Navigate to tasks route directly first
       Get.offNamed('/tasks');
+      
+      // Then clear state
+      _clearHistoryState();
     } catch (e) {
       print('Error in backToTasksRoute: $e');
       Get.back();
@@ -189,8 +186,6 @@ class TaskHistoryController extends GetxController {
   // Method to navigate back to projects (if needed)
   void backToProjects() {
     try {
-      _clearHistoryState();
-      
       if (Get.isRegistered<ProjectTaskController>()) {
         final projectController = Get.find<ProjectTaskController>();
         projectController.backToProjects();
@@ -198,6 +193,9 @@ class TaskHistoryController extends GetxController {
       
       // Navigate back to projects
       Get.offAllNamed('/projects');
+      
+      // Clear state after navigation
+      _clearHistoryState();
     } catch (e) {
       print('Error in backToProjects: $e');
       Get.back();
