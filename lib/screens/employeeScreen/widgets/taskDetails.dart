@@ -230,7 +230,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
         children: [
           SizedBox(
             width: 120.w,
-            child: Text(
+            child: SelectableText(
               label,
               style: TextStyle(
                 fontSize: 14.sp,
@@ -240,7 +240,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
             ),
           ),
           Expanded(
-            child: Text(
+            child: SelectableText(
               value,
               style: TextStyle(fontSize: 14.sp, color: Colors.black87),
             ),

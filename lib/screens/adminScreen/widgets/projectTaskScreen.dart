@@ -126,7 +126,7 @@ class TaskWidget extends StatelessWidget {
                                   ),
                                 ),
                                 SizedBox(height: 8.h),
-                                Text(
+                                SelectableText(
                                   project.description.isNotEmpty
                                       ? project.description
                                       : 'No description available',

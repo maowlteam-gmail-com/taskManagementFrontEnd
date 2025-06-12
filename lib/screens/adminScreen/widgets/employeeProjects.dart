@@ -1422,7 +1422,7 @@ Widget _buildTasksGridView() {
                         ),
                       ),
                       SizedBox(height: 8),
-                      Text(
+                      SelectableText(
                         description,
                         style: TextStyle(fontSize: 14, color: Colors.white),
                       ),
