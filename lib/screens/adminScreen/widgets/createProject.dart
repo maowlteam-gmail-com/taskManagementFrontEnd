@@ -46,19 +46,7 @@ class CreateProject extends StatelessWidget {
           SizedBox(height: 8.h),
           SizedBox(
             height: 200.h,
-            child: Obx(() => TextField(
-              onChanged: controller.updateDescription,
-              maxLines: null,
-              minLines: 8,
-              cursorColor: Colors.black,
-              decoration: _inputDecoration(),
-              controller: TextEditingController.fromValue(
-                TextEditingValue(
-                  text: controller.description.value,
-                  selection: TextSelection.collapsed(offset: controller.description.value.length),
-                ),
-              ),
-            )),
+            child: _buildDescriptionField(),
           ),
           SizedBox(height: 30.h),
 
@@ -77,6 +65,13 @@ class CreateProject extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  // Helper method to preserve cursor position
+  void _preserveCursorPosition(String controllerKey, String newValue) {
+    // This method should be called when text changes to preserve cursor position
+    // You might need to implement this in your controller to track cursor positions
+    // For now, we'll use a simpler approach with individual controllers
   }
 
   // Mobile layout with stacked form elements
@@ -104,43 +99,98 @@ class CreateProject extends StatelessWidget {
   }
 
   Widget _buildProjectNameField() {
+    // Create a dedicated TextEditingController for project name
+    final TextEditingController projectNameController = TextEditingController();
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Project Name', style: TextStyle(fontSize: 20.sp)),
         SizedBox(height: 8.h),
-        Obx(() => TextField(
-          onChanged: controller.updateProjectName,
-          cursorColor: Colors.black,
-          decoration: _inputDecoration(),
-          controller: TextEditingController.fromValue(
-            TextEditingValue(
-              text: controller.projectName.value,
-              selection: TextSelection.collapsed(offset: controller.projectName.value.length),
-            ),
-          ),
-        )),
+        Obx(() {
+          // Only update controller text if it's different to avoid cursor jump
+          if (projectNameController.text != controller.projectName.value) {
+            final selection = projectNameController.selection;
+            projectNameController.text = controller.projectName.value;
+            // Preserve cursor position if selection is still valid
+            if (selection.isValid && selection.start <= controller.projectName.value.length) {
+              projectNameController.selection = selection;
+            }
+          }
+          
+          return TextField(
+            controller: projectNameController,
+            onChanged: (value) {
+              controller.updateProjectName(value);
+            },
+            cursorColor: Colors.black,
+            decoration: _inputDecoration(),
+          );
+        }),
       ],
     );
   }
 
+  Widget _buildDescriptionField() {
+    // Create a dedicated TextEditingController for description
+    final TextEditingController descriptionController = TextEditingController();
+    
+    return Obx(() {
+      // Only update controller text if it's different to avoid cursor jump
+      if (descriptionController.text != controller.description.value) {
+        final selection = descriptionController.selection;
+        descriptionController.text = controller.description.value;
+        // Preserve cursor position if selection is still valid
+        if (selection.isValid && selection.start <= controller.description.value.length) {
+          descriptionController.selection = selection;
+        }
+      }
+      
+      return TextField(
+        controller: descriptionController,
+        onChanged: (value) {
+          controller.updateDescription(value);
+        },
+        maxLines: null,
+        minLines: 8,
+        cursorColor: Colors.black,
+        decoration: _inputDecoration(),
+      );
+    });
+  }
+
   Widget _buildLabeledField(String label, {required String initialValue, required Function(String) onChanged}) {
+    // Create a dedicated TextEditingController for this field
+    final TextEditingController fieldController = TextEditingController();
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: TextStyle(fontSize: 20.sp)),
         SizedBox(height: 8.h),
-        Obx(() => TextField(
-          onChanged: onChanged,
-          cursorColor: Colors.black,
-          decoration: _inputDecoration(),
-          controller: TextEditingController.fromValue(
-            TextEditingValue(
-              text: initialValue,
-              selection: TextSelection.collapsed(offset: initialValue.length),
-            ),
-          ),
-        )),
+        StatefulBuilder(
+          builder: (context, setState) {
+            // Only update controller text if it's different to avoid cursor jump
+            if (fieldController.text != initialValue) {
+              final selection = fieldController.selection;
+              fieldController.text = initialValue;
+              // Preserve cursor position if selection is still valid
+              if (selection.isValid && selection.start <= initialValue.length) {
+                fieldController.selection = selection;
+              }
+            }
+            
+            return TextField(
+              controller: fieldController,
+              onChanged: (value) {
+                onChanged(value);
+                setState(() {}); // Trigger rebuild to update the field
+              },
+              cursorColor: Colors.black,
+              decoration: _inputDecoration(),
+            );
+          },
+        ),
       ],
     );
   }

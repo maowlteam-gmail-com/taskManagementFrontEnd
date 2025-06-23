@@ -67,6 +67,10 @@ class CreateTaskContent extends StatelessWidget {
               minLines: 8,
               cursorColor: Colors.black,
               decoration: _inputDecoration(),
+              onChanged: (value) {
+                // Preserve cursor position during text changes
+                _preserveCursorPosition(controller.detailsController, value);
+              },
             ),
           ),
           SizedBox(height: 30.h),
@@ -86,6 +90,21 @@ class CreateTaskContent extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  // Helper method to preserve cursor position
+  void _preserveCursorPosition(TextEditingController textController, String newValue) {
+    final currentSelection = textController.selection;
+    if (currentSelection.isValid && 
+        currentSelection.start <= newValue.length && 
+        currentSelection.end <= newValue.length) {
+      // Only update if the selection is still valid
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (textController.text == newValue) {
+          textController.selection = currentSelection;
+        }
+      });
+    }
   }
 
   // Project selector dropdown
@@ -205,6 +224,10 @@ class CreateTaskContent extends StatelessWidget {
           controller: textController,
           cursorColor: Colors.black,
           decoration: _inputDecoration(),
+          onChanged: (value) {
+            // Preserve cursor position during text changes
+            _preserveCursorPosition(textController, value);
+          },
         ),
       ],
     );
@@ -329,23 +352,6 @@ class CreateTaskContent extends StatelessWidget {
                 String currentDate = isStart ? controller.startDate.value : controller.endDate.value;
                 bool isManuallySet = _isDateManuallyOverridden(isStart);
                 
-                // if (isManuallySet && currentDate.isNotEmpty) {
-                //   return Container(
-                //     padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
-                //     decoration: BoxDecoration(
-                //       color: Colors.blue,
-                //       borderRadius: BorderRadius.circular(10.r),
-                //     ),
-                //     child: Text(
-                //       'Custom',
-                //       style: TextStyle(
-                //         fontSize: 10.sp,
-                //         color: Colors.white,
-                //         fontWeight: FontWeight.bold,
-                //       ),
-                //     ),
-                //   );
-                // }
                 return SizedBox.shrink();
               }),
             ],
@@ -361,7 +367,7 @@ class CreateTaskContent extends StatelessWidget {
               decoration: BoxDecoration(
                 color: hasDate ? Colors.white : Colors.grey[100],
                 border: Border.all(
-                 // color: isManuallySet ? Colors.black : Colors.grey,
+                  color: Colors.grey,
                   width: isManuallySet ? 2 : 1,
                 ),
                 borderRadius: BorderRadius.circular(5.r),
@@ -483,9 +489,6 @@ class CreateTaskContent extends StatelessWidget {
         controller.endDate.value = formatted;
         controller.endDateController.text = formatted;
       }
-      
-      // Show confirmation of manual override
-     
     }
   }
 

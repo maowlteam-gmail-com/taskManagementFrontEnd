@@ -12,15 +12,26 @@ class TaskHistoryItem extends StatelessWidget {
     required this.historyItem,
   });
 
+  // String formatDateTime(String? dateString) {
+  //   if (dateString == null) return 'N/A';
+  //   try {
+  //     final date = DateTime.parse(dateString);
+  //     return DateFormat('MMM d, yyyy - h:mm a').format(date);
+  //   } catch (e) {
+  //     return 'Invalid Date';
+  //   }
+  // }
   String formatDateTime(String? dateString) {
-    if (dateString == null) return 'N/A';
-    try {
-      final date = DateTime.parse(dateString);
-      return DateFormat('MMM d, yyyy - h:mm a').format(date);
-    } catch (e) {
-      return 'Invalid Date';
-    }
+  if (dateString == null) return 'N/A';
+  try {
+    final date = DateTime.parse(dateString);
+    // Convert UTC to local time
+    final localDate = date.toLocal();
+    return DateFormat('MMM d, yyyy - h:mm a').format(localDate);
+  } catch (e) {
+    return 'Invalid Date';
   }
+}
 
   String getActionTitle(String action) {
     switch (action) {

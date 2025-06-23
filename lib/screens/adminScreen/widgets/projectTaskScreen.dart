@@ -18,7 +18,7 @@ class TaskWidget extends StatelessWidget {
 
     return Column(
       children: [
-        // Header with back button and project name
+        // Header with back button and project name (Fixed at top)
         Container(
           padding: EdgeInsets.all(16.w),
           decoration: BoxDecoration(
@@ -53,138 +53,147 @@ class TaskWidget extends StatelessWidget {
           ),
         ),
 
-        // Project Information Section
-        Obx(() {
-          // Get the current project details
-          final projectId = taskController.selectedProjectId.value;
-          final project = projectController.getProjectById(projectId);
+        // Scrollable content area
+        Expanded(
+          child: SingleChildScrollView(
+            physics: AlwaysScrollableScrollPhysics(),
+            child: Column(
+              children: [
+                // Project Information Section
+                Obx(() {
+                  final projectId = taskController.selectedProjectId.value;
+                  final project = projectController.getProjectById(projectId);
 
-          if (project != null) {
-            return Container(
-              margin: EdgeInsets.all(16.w),
-              child: Card(
-                color: Color(0xff333333),
-                elevation: 8,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Stack(
-                  children: [
-                    // Main content
-                    Container(
-                      padding: EdgeInsets.all(16.w),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [Colors.grey[900]!, Colors.grey[800]!],
+                  if (project != null) {
+                    return Container(
+                      margin: EdgeInsets.all(16.w),
+                      child: Card(
+                        color: Color(0xff333333),
+                        elevation: 8,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Header with project info title
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Project Information',
-                                style: TextStyle(
-                                  fontSize: 20.sp,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                        child: Stack(
+                          children: [
+                            // Main content
+                            Container(
+                              padding: EdgeInsets.all(16.w),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [Colors.grey[900]!, Colors.grey[800]!],
                                 ),
                               ),
-                              SizedBox(
-                                width: 80.w,
-                              ), // Space for status container
-                            ],
-                          ),
-
-                          SizedBox(height: 16.h),
-
-                          // Description
-                          Container(
-                            width: double.infinity,
-                            padding: EdgeInsets.all(12.w),
-                            decoration: BoxDecoration(
-                              color: Colors.grey[800],
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.grey[600]!),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'DESCRIPTION',
-                                  style: TextStyle(
-                                    fontSize: 12.sp,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.blue[300],
-                                    letterSpacing: 1.2,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Header with project info title
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Project Information',
+                                        style: TextStyle(
+                                          fontSize: 20.sp,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        width: 80.w,
+                                      ), // Space for status container
+                                    ],
                                   ),
-                                ),
-                                SizedBox(height: 8.h),
-                                SelectableText(
-                                  project.description.isNotEmpty
-                                      ? project.description
-                                      : 'No description available',
-                                  style: TextStyle(
-                                    fontSize: 14.sp,
-                                    color: Colors.white,
-                                    height: 1.3,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
 
-                    // Status container spanning full height on the right side
-                    Positioned(
-                      top: 0,
-                      right: 0,
-                      bottom: 0,
-                      child: Container(
-                        width: 60.w,
-                        decoration: BoxDecoration(
-                          color: _getStatusColor(project.status),
-                          borderRadius: BorderRadius.only(
-                            topRight: Radius.circular(12),
-                            bottomRight: Radius.circular(12),
-                          ),
-                        ),
-                        child: RotatedBox(
-                          quarterTurns: 3,
-                          child: Center(
-                            child: Text(
-                              project.status.toUpperCase().replaceAll('_', ' '),
-                              style: TextStyle(
-                                fontSize: 11.sp,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                letterSpacing: 1.2,
+                                  SizedBox(height: 16.h),
+
+                                  // Description
+                                  Container(
+                                    width: double.infinity,
+                                    padding: EdgeInsets.all(12.w),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[800],
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: Colors.grey[600]!),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'DESCRIPTION',
+                                          style: TextStyle(
+                                            fontSize: 12.sp,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.blue[300],
+                                            letterSpacing: 1.2,
+                                          ),
+                                        ),
+                                        SizedBox(height: 8.h),
+                                        SelectableText(
+                                          project.description.isNotEmpty
+                                              ? project.description
+                                              : 'No description available',
+                                          style: TextStyle(
+                                            fontSize: 14.sp,
+                                            color: Colors.white,
+                                            height: 1.3,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
-                              textAlign: TextAlign.center,
                             ),
-                          ),
+
+                            // Status container spanning full height on the right side
+                            Positioned(
+                              top: 0,
+                              right: 0,
+                              bottom: 0,
+                              child: Container(
+                                width: 60.w,
+                                decoration: BoxDecoration(
+                                  color: _getStatusColor(project.status),
+                                  borderRadius: BorderRadius.only(
+                                    topRight: Radius.circular(12),
+                                    bottomRight: Radius.circular(12),
+                                  ),
+                                ),
+                                child: RotatedBox(
+                                  quarterTurns: 3,
+                                  child: Center(
+                                    child: Text(
+                                      project.status.toUpperCase().replaceAll('_', ' '),
+                                      style: TextStyle(
+                                        fontSize: 11.sp,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                        letterSpacing: 1.2,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          } else {
-            return SizedBox.shrink();
-          }
-        }),
+                    );
+                  } else {
+                    return SizedBox.shrink();
+                  }
+                }),
 
-        // Task grid view
-        Expanded(child: _buildTaskGridView(taskController)),
+                // Task grid view section
+                _buildTaskGridView(taskController),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -192,60 +201,76 @@ class TaskWidget extends StatelessWidget {
   Widget _buildTaskGridView(ProjectTaskController controller) {
     return Obx(() {
       if (controller.isLoading.value) {
-        return const Center(
-          child: CircularProgressIndicator(color: Colors.grey),
+        return Container(
+          height: 300.h, // Give it a minimum height
+          child: const Center(
+            child: CircularProgressIndicator(color: Colors.grey),
+          ),
         );
       }
 
       if (controller.errorMessage.value.isNotEmpty) {
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.error_outline, size: 48.sp, color: Colors.red),
-              SizedBox(height: 16.h),
-              Text(
-                controller.errorMessage.value,
-                style: TextStyle(fontSize: 16.sp, color: Colors.black),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: 16.h),
-              ElevatedButton(
-                onPressed: () => controller.refreshTasks(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey[900],
-                  foregroundColor: Colors.white,
+        return Container(
+          height: 300.h, // Give it a minimum height
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline, size: 48.sp, color: Colors.red),
+                SizedBox(height: 16.h),
+                Text(
+                  controller.errorMessage.value,
+                  style: TextStyle(fontSize: 16.sp, color: Colors.black),
+                  textAlign: TextAlign.center,
                 ),
-                child: Text('Retry'),
-              ),
-            ],
+                SizedBox(height: 16.h),
+                ElevatedButton(
+                  onPressed: () => controller.refreshTasks(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.grey[900],
+                    foregroundColor: Colors.white,
+                  ),
+                  child: Text('Retry'),
+                ),
+              ],
+            ),
           ),
         );
       }
 
       if (controller.tasks.isEmpty) {
-        return const Center(
-          child: Text(
-            'No tasks found for this project',
-            style: TextStyle(fontSize: 18, color: Colors.black),
+        return Container(
+          height: 300.h, // Give it a minimum height
+          child: const Center(
+            child: Text(
+              'No tasks found for this project',
+              style: TextStyle(fontSize: 18, color: Colors.black),
+            ),
           ),
         );
       }
 
-      return RefreshIndicator(
-        onRefresh: () => controller.refreshTasks(),
-        color: Colors.grey[900],
-        backgroundColor: Colors.white,
-        child: Padding(
-          padding: EdgeInsets.all(16.w),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              bool isMobile = constraints.maxWidth < 600;
+      return Padding(
+        padding: EdgeInsets.all(16.w),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            bool isMobile = constraints.maxWidth < 600;
+            
+            // Calculate the height needed for the grid
+            int crossAxisCount = isMobile ? 1 : 2;
+            double childAspectRatio = isMobile ? 2.2 : 2.5;
+            int rowCount = (controller.tasks.length / crossAxisCount).ceil();
+            double gridHeight = (rowCount * (constraints.maxWidth / crossAxisCount / childAspectRatio)) + 
+                              ((rowCount - 1) * 12.h); // Adding spacing
 
-              return GridView.builder(
+            return Container(
+              height: gridHeight,
+              child: GridView.builder(
+                physics: NeverScrollableScrollPhysics(), // Disable internal scrolling
+                shrinkWrap: true,
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: isMobile ? 1 : 2,
-                  childAspectRatio: isMobile ? 2.2 : 2.5,
+                  crossAxisCount: crossAxisCount,
+                  childAspectRatio: childAspectRatio,
                   crossAxisSpacing: 12.w,
                   mainAxisSpacing: 12.h,
                 ),
@@ -257,9 +282,9 @@ class TaskWidget extends StatelessWidget {
                     onTap: () => _navigateToTaskHistory(task, controller),
                   );
                 },
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       );
     });
@@ -515,7 +540,7 @@ class TaskCard extends StatelessWidget {
       case 'completed':
         return Colors.green;
       case 'cancelled':
-        return Colors.red;
+        return const Color.fromARGB(255, 160, 35, 26);
       case 'warning':
         return Colors.red;
       default:

@@ -50,6 +50,19 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     }
   }
 
+  // New function to format date and time with local time conversion
+  String formatDateTime(String? dateString) {
+    if (dateString == null) return 'N/A';
+    try {
+      final date = DateTime.parse(dateString);
+      // Convert UTC to local time
+      final localDate = date.toLocal();
+      return DateFormat('MMM d, yyyy - h:mm a').format(localDate);
+    } catch (e) {
+      return 'Invalid Date';
+    }
+  }
+
   String capitalizeStatus(String status) {
     return status
         .split('_')
@@ -69,12 +82,42 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       case 'completed':
         return Colors.green;
       case 'cancelled':
-        return Colors.red;
+        return const Color.fromARGB(255, 160, 35, 26);
       case 'warning':
         return Colors.red;
       default:
         return Colors.grey;
     }
+  }
+
+  // New method to calculate total hours spent
+  double getTotalHoursSpent() {
+    if (_task['work_details'] == null || !(_task['work_details'] is List)) {
+      return 0.0;
+    }
+
+    double totalHours = 0.0;
+    final List<dynamic> workDetails = _task['work_details'] as List;
+    
+    for (var workDetail in workDetails) {
+      if (workDetail is Map<String, dynamic> && workDetail['hours_spent'] != null) {
+        try {
+          // Handle both int and double values
+          final hoursSpent = workDetail['hours_spent'];
+          if (hoursSpent is int) {
+            totalHours += hoursSpent.toDouble();
+          } else if (hoursSpent is double) {
+            totalHours += hoursSpent;
+          } else if (hoursSpent is String) {
+            totalHours += double.tryParse(hoursSpent) ?? 0.0;
+          }
+        } catch (e) {
+          print('Error parsing hours_spent: $e');
+        }
+      }
+    }
+    
+    return totalHours;
   }
 
   Future<void> refreshTaskData() async {
@@ -279,144 +322,161 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   }
 
   // Updated attachment item with proper download functionality
- // Updated attachment item with proper download functionality
-Widget _buildAttachmentItem(dynamic attachment) {
-  if (attachment is! Map<String, dynamic>) return SizedBox.shrink();
+  Widget _buildAttachmentItem(dynamic attachment) {
+    if (attachment is! Map<String, dynamic>) return SizedBox.shrink();
 
-  final fileName = attachment['filename'] ?? 
-                  attachment['fileName'] ?? 
-                  attachment['originalName'] ?? 
-                  'Unknown File';
-  
-  // Fix: Use 'file_id' which matches your API response structure
-  final fileId = attachment['file_id'] ?? 
-                 attachment['_id'] ?? 
-                 attachment['id'] ?? 
-                 attachment['fileId'] ?? 
-                 '';
-  
-  final fileType = attachment['type'] ?? 
-                   attachment['fileType'] ?? 
-                   attachment['mimetype'] ?? 
+    final fileName = attachment['filename'] ?? 
+                    attachment['fileName'] ?? 
+                    attachment['originalName'] ?? 
+                    'Unknown File';
+    
+    // Fix: Use 'file_id' which matches your API response structure
+    final fileId = attachment['file_id'] ?? 
+                   attachment['_id'] ?? 
+                   attachment['id'] ?? 
+                   attachment['fileId'] ?? 
                    '';
+    
+    final fileType = attachment['type'] ?? 
+                     attachment['fileType'] ?? 
+                     attachment['mimetype'] ?? 
+                     '';
 
-  // Debug print to see what we're getting
-  print('Attachment data: $attachment');
-  print('Extracted fileId: $fileId');
-  print('Extracted fileName: $fileName');
-  print('Extracted fileType: $fileType');
+    // Debug print to see what we're getting
+    print('Attachment data: $attachment');
+    print('Extracted fileId: $fileId');
+    print('Extracted fileName: $fileName');
+    print('Extracted fileType: $fileType');
 
-  // Choose icon based on file type
-  IconData fileIcon;
-  Color iconColor;
-  
-  String typeCheck = fileType.toLowerCase();
-  if (typeCheck.contains('image')) {
-    fileIcon = Icons.image;
-    iconColor = Colors.blue[400]!;
-  } else if (typeCheck.contains('pdf')) {
-    fileIcon = Icons.picture_as_pdf;
-    iconColor = Colors.red[400]!;
-  } else if (typeCheck.contains('doc')) {
-    fileIcon = Icons.description;
-    iconColor = Colors.blue[700]!;
-  } else if (typeCheck.contains('xls') || typeCheck.contains('excel')) {
-    fileIcon = Icons.table_chart;
-    iconColor = Colors.green[600]!;
-  } else if (typeCheck.contains('video')) {
-    fileIcon = Icons.video_file;
-    iconColor = Colors.purple[400]!;
-  } else if (typeCheck.contains('audio')) {
-    fileIcon = Icons.audio_file;
-    iconColor = Colors.orange[400]!;
-  } else {
-    fileIcon = Icons.insert_drive_file;
-    iconColor = Colors.grey[400]!;
-  }
+    // Choose icon based on file type
+    IconData fileIcon;
+    Color iconColor;
+    
+    String typeCheck = fileType.toLowerCase();
+    if (typeCheck.contains('image')) {
+      fileIcon = Icons.image;
+      iconColor = Colors.blue[400]!;
+    } else if (typeCheck.contains('pdf')) {
+      fileIcon = Icons.picture_as_pdf;
+      iconColor = Colors.red[400]!;
+    } else if (typeCheck.contains('doc')) {
+      fileIcon = Icons.description;
+      iconColor = Colors.blue[700]!;
+    } else if (typeCheck.contains('xls') || typeCheck.contains('excel')) {
+      fileIcon = Icons.table_chart;
+      iconColor = Colors.green[600]!;
+    } else if (typeCheck.contains('video')) {
+      fileIcon = Icons.video_file;
+      iconColor = Colors.purple[400]!;
+    } else if (typeCheck.contains('audio')) {
+      fileIcon = Icons.audio_file;
+      iconColor = Colors.orange[400]!;
+    } else {
+      fileIcon = Icons.insert_drive_file;
+      iconColor = Colors.grey[400]!;
+    }
 
-  return Padding(
-    padding: EdgeInsets.only(bottom: 8.h),
-    child: InkWell(
-      onTap: () async {
-        if (fileId.isNotEmpty) {
-          print('Attempting to download file with ID: $fileId');
-          // Download file using the DownloadService
-          await _downloadService.downloadFile(fileId, fileName: fileName);
-        } else {
-          print('File ID is empty. Attachment structure: $attachment');
-          Get.snackbar(
-            'Error',
-            'File ID not available for download',
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.red[100],
-            colorText: Colors.red[800],
-            duration: Duration(seconds: 2),
-          );
-        }
-      },
-      borderRadius: BorderRadius.circular(8.r),
-      child: Container(
-        padding: EdgeInsets.all(12.w),
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(8.r),
-          border: Border.all(color: Colors.grey[300]!),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              fileIcon,
-              size: 24.sp,
-              color: iconColor,
-            ),
-            SizedBox(width: 12.w),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    fileName,
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      color: Colors.black87,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (fileType.isNotEmpty) ...[
-                    SizedBox(height: 2.h),
+    return Padding(
+      padding: EdgeInsets.only(bottom: 8.h),
+      child: InkWell(
+        onTap: () async {
+          if (fileId.isNotEmpty) {
+            print('Attempting to download file with ID: $fileId');
+            // Download file using the DownloadService
+            await _downloadService.downloadFile(fileId, fileName: fileName);
+          } else {
+            print('File ID is empty. Attachment structure: $attachment');
+            Get.snackbar(
+              'Error',
+              'File ID not available for download',
+              snackPosition: SnackPosition.BOTTOM,
+              backgroundColor: Colors.red[100],
+              colorText: Colors.red[800],
+              duration: Duration(seconds: 2),
+            );
+          }
+        },
+        borderRadius: BorderRadius.circular(8.r),
+        child: Container(
+          padding: EdgeInsets.all(12.w),
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            borderRadius: BorderRadius.circular(8.r),
+            border: Border.all(color: Colors.grey[300]!),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                fileIcon,
+                size: 24.sp,
+                color: iconColor,
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      fileType.toUpperCase(),
+                      fileName,
                       style: TextStyle(
-                        fontSize: 10.sp,
-                        color: Colors.grey[600],
-                        fontWeight: FontWeight.w400,
+                        fontSize: 14.sp,
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w500,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
+                    if (fileType.isNotEmpty) ...[
+                      SizedBox(height: 2.h),
+                      Text(
+                        fileType.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 10.sp,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-            SizedBox(width: 8.w),
-            Container(
-              padding: EdgeInsets.all(6.w),
-              decoration: BoxDecoration(
-                color: Colors.blue[600],
-                borderRadius: BorderRadius.circular(6.r),
+              SizedBox(width: 8.w),
+              Container(
+                padding: EdgeInsets.all(6.w),
+                decoration: BoxDecoration(
+                  color: Colors.blue[600],
+                  borderRadius: BorderRadius.circular(6.r),
+                ),
+                child: Icon(
+                  Icons.download,
+                  size: 18.sp,
+                  color: Colors.white,
+                ),
               ),
-              child: Icon(
-                Icons.download,
-                size: 18.sp,
-                color: Colors.white,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
+  // Add this helper method to your _TaskDetailScreenState class:
+Color _generateAvatarColor(String username) {
+  // Generate a consistent color based on username
+  final colors = [
+    Colors.blue[600]!,
+    Colors.green[600]!,
+    Colors.orange[600]!,
+    Colors.purple[600]!,
+    Colors.red[600]!,
+    Colors.teal[600]!,
+    Colors.indigo[600]!,
+    Colors.pink[600]!,
+  ];
+  
+  int hash = username.hashCode;
+  return colors[hash.abs() % colors.length];
 }
+
   @override
   Widget build(BuildContext context) {
     try {
@@ -426,7 +486,11 @@ Widget _buildAttachmentItem(dynamic attachment) {
       final startDate = formatDate(_task['start_date']);
       final endDate = formatDate(_task['end_date']);
       final status = _task['status'] ?? 'unknown';
-      final updatedAt = formatDate(_task['updatedAt']);
+      // Updated to use formatDateTime for displaying updated time with local time conversion
+      final updatedAt = formatDateTime(_task['updatedAt']);
+
+      // Calculate total hours spent
+      final totalHours = getTotalHoursSpent();
 
       String createdBy = 'Unknown';
       if (_task['created_by'] is Map) {
@@ -528,7 +592,9 @@ Widget _buildAttachmentItem(dynamic attachment) {
                               _buildInfoRow('End Date:', endDate),
                               _buildInfoRow('Created By:', createdBy),
                               _buildInfoRow('Assigned To:', assignedTo),
-                              _buildInfoRow('Updated:', updatedAt),
+                              _buildInfoRow('Last Updated:', updatedAt),
+                              // Add total hours spent
+                              _buildInfoRow('Total Hours Spent:', '${totalHours.toStringAsFixed(1)} hrs'),
                             ],
                           ),
                         ),
@@ -573,74 +639,196 @@ Widget _buildAttachmentItem(dynamic attachment) {
                                   ),
                                 )
                               else
-                                ListView.builder(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: workDetails.length,
-                                  itemBuilder: (context, index) {
-                                    if (index >= workDetails.length) {
-                                      return Container();
-                                    }
-                                    try {
-                                      final workDetail = workDetails[index]
-                                          as Map<String, dynamic>;
+                               // Replace your existing work history ListView.builder section with this updated version:
 
-                                      return Container(
-                                        margin: EdgeInsets.only(bottom: 16.h),
-                                        padding: EdgeInsets.all(16.w),
-                                        decoration: BoxDecoration(
-                                          color: Colors.grey[50],
-                                          borderRadius: BorderRadius.circular(12.r),
-                                          border: Border.all(
-                                            color: Colors.grey[200]!,
-                                          ),
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            // Date and time
-                                            if (workDetail['date'] != null)
-                                              Text(
-                                                formatDate(
-                                                  workDetail['date'].toString(),
-                                                ),
-                                                style: TextStyle(
-                                                  fontSize: 12.sp,
-                                                  color: Colors.grey[600],
-                                                  fontWeight: FontWeight.w500,
-                                                ),
-                                              ),
-                                            SizedBox(height: 8.h),
+ListView.builder(
+  shrinkWrap: true,
+  physics: const NeverScrollableScrollPhysics(),
+  itemCount: workDetails.length,
+  itemBuilder: (context, index) {
+    if (index >= workDetails.length) {
+      return Container();
+    }
+    try {
+      final workDetail = workDetails[index] as Map<String, dynamic>;
 
-                                            // Description
-                                            if (workDetail['description'] !=
-                                                    null &&
-                                                workDetail['description']
-                                                    .toString()
-                                                    .isNotEmpty)
-                                              Text(
-                                                workDetail['description']
-                                                    .toString(),
-                                                style: TextStyle(
-                                                  fontSize: 14.sp,
-                                                  color: Colors.black87,
-                                                ),
-                                              ),
+      // Extract hours spent for this work detail
+      double hoursSpent = 0.0;
+      if (workDetail['hours_spent'] != null) {
+        try {
+          final hours = workDetail['hours_spent'];
+          if (hours is int) {
+            hoursSpent = hours.toDouble();
+          } else if (hours is double) {
+            hoursSpent = hours;
+          } else if (hours is String) {
+            hoursSpent = double.tryParse(hours) ?? 0.0;
+          }
+        } catch (e) {
+          print('Error parsing hours_spent: $e');
+        }
+      }
 
-                                            // Attachments with download functionality
-                                            _buildAttachmentsSection(
-                                              workDetail['attachments'] ??
-                                                  workDetail['files'],
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    } catch (e) {
-                                      return Container();
-                                    }
-                                  },
-                                ),
+      // Extract added_by information
+      String addedByUsername = 'Unknown';
+      String userInitial = 'U';
+      if (workDetail['added_by'] is Map) {
+        final addedByMap = workDetail['added_by'] as Map;
+        if (addedByMap.containsKey('username')) {
+          addedByUsername = addedByMap['username']?.toString() ?? 'Unknown';
+          userInitial = addedByUsername.isNotEmpty 
+              ? addedByUsername[0].toUpperCase() 
+              : 'U';
+        }
+      }
+
+      // Generate a color for the avatar based on username
+      Color avatarColor = _generateAvatarColor(addedByUsername);
+
+      return Container(
+        margin: EdgeInsets.only(bottom: 16.h),
+        padding: EdgeInsets.all(16.w),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(12.r),
+          border: Border.all(
+            color: Colors.grey[200]!,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with user info, date and hours
+            Row(
+              children: [
+                // User Avatar
+                CircleAvatar(
+                  radius: 18.r,
+                  backgroundColor: avatarColor,
+                  child: Text(
+                    userInitial,
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                SizedBox(width: 8.w),
+                // Username
+                Text(
+                  addedByUsername,
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+                Spacer(),
+                // Hours spent
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 8.w,
+                    vertical: 4.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[100],
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.access_time,
+                        size: 14.sp,
+                        color: Colors.blue[800],
+                      ),
+                      SizedBox(width: 4.w),
+                      Text(
+                        '${hoursSpent.toStringAsFixed(1)} hrs',
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: Colors.blue[800],
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 8.h),
+
+            // Date and time
+            if (workDetail['date'] != null)
+              Text(
+                formatDateTime(workDetail['date'].toString()),
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            SizedBox(height: 8.h),
+
+            // Caption (if available)
+            if (workDetail['caption'] != null && 
+                workDetail['caption'].toString().isNotEmpty)
+              Container(
+                margin: EdgeInsets.only(bottom: 8.h),
+                padding: EdgeInsets.all(8.w),
+                decoration: BoxDecoration(
+                  color: Colors.amber[50],
+                  borderRadius: BorderRadius.circular(8.r),
+                  border: Border.all(color: Colors.amber[200]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.chat_bubble_outline,
+                      size: 16.sp,
+                      color: Colors.amber[700],
+                    ),
+                    SizedBox(width: 8.w),
+                    Expanded(
+                      child: Text(
+                        workDetail['caption'].toString(),
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          color: Colors.amber[800],
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            // Description
+            if (workDetail['description'] != null &&
+                workDetail['description'].toString().isNotEmpty)
+              SelectableText(
+                workDetail['description'].toString(),
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  color: Colors.black87,
+                ),
+              ),
+
+            // Attachments with download functionality
+            _buildAttachmentsSection(
+              workDetail['attachments'] ?? workDetail['files'],
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      return Container();
+    }
+  },
+)
+
+
                             ],
                           ),
                         ),

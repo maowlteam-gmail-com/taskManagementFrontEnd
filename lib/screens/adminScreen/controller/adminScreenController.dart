@@ -16,9 +16,11 @@ class AdminScreenController extends GetxController {
     selectedOption.value = option;
   }
 
-  // Method to set admin name
+  // Method to set admin name and persist it
   void setAdminName(String name) {
     adminName.value = name;
+    // Store admin name in local storage for persistence
+    box.write('adminName', name);
   }
 
   // List of teams
@@ -42,6 +44,64 @@ class AdminScreenController extends GetxController {
   // Add a new team
   void addTeam(Map<String, dynamic> teamData) {
     teamsList.add(teamData);
+  }
+
+  // Method to load admin name from storage or fetch from API
+  Future<void> loadAdminName() async {
+    // First try to get from local storage
+    String? storedAdminName = box.read('adminName');
+    
+    if (storedAdminName != null && storedAdminName.isNotEmpty) {
+      adminName.value = storedAdminName;
+      return;
+    }
+
+    // If not in storage, try to get from arguments
+    if (Get.arguments != null) {
+      String nameFromArgs = Get.arguments.toString();
+      setAdminName(nameFromArgs);
+      return;
+    }
+
+    // If neither available, fetch from API using the current user's token
+    await fetchAdminProfile();
+  }
+
+  // Fetch admin profile information
+  Future<void> fetchAdminProfile() async {
+    try {
+      final token = box.read('token');
+      
+      if (token == null) {
+        print('No token found for fetching admin profile');
+        return;
+      }
+
+      final response = await _dio.get(
+        '${dotenv.env['BASE_URL']}/api/profile', // Adjust endpoint as needed
+        options: Options(
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer $token",
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final profileData = response.data;
+        if (profileData['username'] != null) {
+          setAdminName(profileData['username']);
+        } else if (profileData['name'] != null) {
+          setAdminName(profileData['name']);
+        }
+      }
+    } catch (e) {
+      print('Error fetching admin profile: $e');
+      // Fallback to a default name or leave empty
+      if (adminName.value.isEmpty) {
+        adminName.value = 'Admin'; // Default fallback
+      }
+    }
   }
 
   // Fetch employees
@@ -328,74 +388,75 @@ class AdminScreenController extends GetxController {
 
   //logout
   Future<void> logout() async {
-  isLoading.value = true;
-  errorMessage.value = "";
+    isLoading.value = true;
+    errorMessage.value = "";
 
-  try {
-    final token = box.read('token');
+    try {
+      final token = box.read('token');
 
-    if (token == null) {
+      if (token == null) {
+        Get.snackbar(
+          "Error",
+          "Authentication token not found",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.black87,
+          colorText: Colors.white,
+        );
+        return;
+      }
+
+      final response = await _dio.post(
+        '${dotenv.env['BASE_URL']}/api/logout',
+        options: Options(
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer $token",
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        // Clear token and other user data including adminName
+        box.remove('token');
+        box.remove('userId');
+        box.remove('userName');
+        box.remove('adminName'); // Clear stored admin name
+        
+        // Show success message
+        Get.snackbar(
+          "Success",
+          "Logged out successfully",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.black87,
+          colorText: Colors.white,
+          duration: Duration(seconds: 2),
+        );
+        
+        // Navigate to login screen
+        Get.offAllNamed('/mainsite');
+      } else {
+        errorMessage.value = "Failed to logout: ${response.statusCode}";
+        Get.snackbar(
+          "Error",
+          "Failed to logout: ${response.statusCode}",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.black87,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      errorMessage.value = "Error during logout: $e";
       Get.snackbar(
         "Error",
-        "Authentication token not found",
+        "Error during logout: $e",
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.black87,
         colorText: Colors.white,
       );
-      return;
+    } finally {
+      isLoading.value = false;
     }
-
-    final response = await _dio.post(
-      '${dotenv.env['BASE_URL']}/api/logout',
-      options: Options(
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer $token",
-        },
-      ),
-    );
-
-    if (response.statusCode == 200) {
-      // Clear token and other user data
-      box.remove('token');
-      box.remove('userId');
-      box.remove('userName');
-      
-      // Show success message
-      Get.snackbar(
-        "Success",
-        "Logged out successfully",
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.black87,
-        colorText: Colors.white,
-        duration: Duration(seconds: 2),
-      );
-      
-      // Navigate to login screen
-      Get.offAllNamed('/mainsite');
-    } else {
-      errorMessage.value = "Failed to logout: ${response.statusCode}";
-      Get.snackbar(
-        "Error",
-        "Failed to logout: ${response.statusCode}",
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.black87,
-        colorText: Colors.white,
-      );
-    }
-  } catch (e) {
-    errorMessage.value = "Error during logout: $e";
-    Get.snackbar(
-      "Error",
-      "Error during logout: $e",
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.black87,
-      colorText: Colors.white,
-    );
-  } finally {
-    isLoading.value = false;
   }
-}
 
   // Set selected employee
   void setSelectedEmployee(Map<String, dynamic> employee) {
@@ -403,12 +464,11 @@ class AdminScreenController extends GetxController {
   }
 
   @override
-  void onInit() {
+  void onInit() async {
     super.onInit();
-    // Try to get the admin name from arguments if available
-    if (Get.arguments != null) {
-      adminName.value = Get.arguments.toString();
-    }
+    
+    // Load admin name from storage or fetch it
+    await loadAdminName();
 
     // Initial fetch of employees
     fetchEmployees();

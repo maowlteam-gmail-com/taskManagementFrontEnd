@@ -27,6 +27,9 @@ class _SiteScreenState extends State<SiteScreen> with TickerProviderStateMixin {
   late ScrollController _heroScrollController;
   late ScrollController _servicesScrollController;
   
+  // Add this for better scroll control
+  bool _isScrolling = false;
+  
   @override
   void initState() {
     super.initState();
@@ -40,6 +43,22 @@ class _SiteScreenState extends State<SiteScreen> with TickerProviderStateMixin {
     
     // Start auto-scrolling animations
     _startAutoScroll();
+    
+    // Add scroll listener to detect user interaction
+    _heroScrollController.addListener(_onHeroScroll);
+    _servicesScrollController.addListener(_onServicesScroll);
+  }
+
+  void _onHeroScroll() {
+    if (_heroScrollController.position.isScrollingNotifier.value) {
+      _isScrolling = true;
+    }
+  }
+
+  void _onServicesScroll() {
+    if (_servicesScrollController.position.isScrollingNotifier.value) {
+      _isScrolling = true;
+    }
   }
 
   void _startAutoScroll() {
@@ -58,53 +77,90 @@ class _SiteScreenState extends State<SiteScreen> with TickerProviderStateMixin {
     });
   }
 
-  void _autoScrollHero() {
-    if (!mounted || !_heroScrollController.hasClients) return;
+  void _autoScrollHero() async {
+    if (!mounted || !_heroScrollController.hasClients || _isScrolling) {
+      // Reset scrolling flag after delay
+      Future.delayed(Duration(seconds: 2), () {
+        if (mounted) _isScrolling = false;
+      });
+      
+      // Retry auto-scroll
+      Future.delayed(Duration(seconds: 3), () {
+        if (mounted) _autoScrollHero();
+      });
+      return;
+    }
     
-    const double scrollDistance = 300.0;
-    const duration = Duration(seconds: 3);
+    const double scrollDistance = 200.0; // Reduced for smoother scrolling
+    const duration = Duration(seconds: 4); // Increased duration
     
-    _heroScrollController.animateTo(
-      _heroScrollController.offset + scrollDistance,
-      duration: duration,
-      curve: Curves.linear,
-    ).then((_) {
+    try {
+      await _heroScrollController.animateTo(
+        _heroScrollController.offset + scrollDistance,
+        duration: duration,
+        curve: Curves.easeInOut, // Changed from linear for smoother effect
+      );
+      
       if (mounted) {
-        Future.delayed(Duration(milliseconds: 1000), () {
-          if (mounted && _heroScrollController.hasClients) {
-            // Reset to beginning or continue scrolling
-            if (_heroScrollController.offset >= _heroScrollController.position.maxScrollExtent) {
-              _heroScrollController.jumpTo(0);
-            }
-            _autoScrollHero();
+        await Future.delayed(Duration(milliseconds: 1500));
+        if (mounted && _heroScrollController.hasClients) {
+          // Reset to beginning if at end
+          if (_heroScrollController.offset >= _heroScrollController.position.maxScrollExtent - 50) {
+            await _heroScrollController.animateTo(0, 
+              duration: Duration(milliseconds: 500), 
+              curve: Curves.easeInOut
+            );
           }
-        });
+          _autoScrollHero();
+        }
       }
-    });
+    } catch (e) {
+      // Handle animation errors gracefully
+      Future.delayed(Duration(seconds: 2), () {
+        if (mounted) _autoScrollHero();
+      });
+    }
   }
 
-  void _autoScrollServices() {
-    if (!mounted || !_servicesScrollController.hasClients) return;
+  void _autoScrollServices() async {
+    if (!mounted || !_servicesScrollController.hasClients || _isScrolling) {
+      Future.delayed(Duration(seconds: 2), () {
+        if (mounted) _isScrolling = false;
+      });
+      
+      Future.delayed(Duration(seconds: 3), () {
+        if (mounted) _autoScrollServices();
+      });
+      return;
+    }
     
-    const double scrollDistance = 150.0;
-    const duration = Duration(seconds: 2);
+    const double scrollDistance = 100.0; // Reduced for smoother scrolling
+    const duration = Duration(seconds: 3); // Increased duration
     
-    _servicesScrollController.animateTo(
-      _servicesScrollController.offset + scrollDistance,
-      duration: duration,
-      curve: Curves.linear,
-    ).then((_) {
+    try {
+      await _servicesScrollController.animateTo(
+        _servicesScrollController.offset + scrollDistance,
+        duration: duration,
+        curve: Curves.easeInOut,
+      );
+      
       if (mounted) {
-        Future.delayed(Duration(milliseconds: 800), () {
-          if (mounted && _servicesScrollController.hasClients) {
-            if (_servicesScrollController.offset >= _servicesScrollController.position.maxScrollExtent) {
-              _servicesScrollController.jumpTo(0);
-            }
-            _autoScrollServices();
+        await Future.delayed(Duration(milliseconds: 1000));
+        if (mounted && _servicesScrollController.hasClients) {
+          if (_servicesScrollController.offset >= _servicesScrollController.position.maxScrollExtent - 50) {
+            await _servicesScrollController.animateTo(0,
+              duration: Duration(milliseconds: 500),
+              curve: Curves.easeInOut
+            );
           }
-        });
+          _autoScrollServices();
+        }
       }
-    });
+    } catch (e) {
+      Future.delayed(Duration(seconds: 2), () {
+        if (mounted) _autoScrollServices();
+      });
+    }
   }
 
   @override
@@ -118,7 +174,7 @@ class _SiteScreenState extends State<SiteScreen> with TickerProviderStateMixin {
   void _navigateToPage(int pageIndex) {
     _pageController.animateToPage(
       pageIndex,
-      duration: Duration(milliseconds: 800),
+      duration: Duration(milliseconds: 600), // Reduced duration for better responsiveness
       curve: Curves.easeInOutCubic,
     );
   }
@@ -138,7 +194,8 @@ class _SiteScreenState extends State<SiteScreen> with TickerProviderStateMixin {
           body: PageView(
             controller: _pageController,
             scrollDirection: Axis.vertical,
-            physics: ClampingScrollPhysics(), // Better scroll physics
+            physics: PageScrollPhysics(), // Changed to PageScrollPhysics for better snapping
+            pageSnapping: true, // Ensure pages snap properly
             children: [
               // Section 1: Hero Section
               _buildHeroSection(isMobile, screenHeight, screenWidth),
@@ -166,6 +223,65 @@ class _SiteScreenState extends State<SiteScreen> with TickerProviderStateMixin {
       },
     );
   }
+// Custom image widget with fade-in animation for assets
+Widget _buildImageWithLoading(String imagePath, {
+  BoxFit fit = BoxFit.cover,
+  double? width,
+  double? height,
+  BorderRadius? borderRadius,
+  List<BoxShadow>? boxShadow,
+}) {
+  return Container(
+    width: width,
+    height: height,
+    decoration: BoxDecoration(
+      borderRadius: borderRadius,
+      boxShadow: boxShadow,
+    ),
+    child: ClipRRect(
+      borderRadius: borderRadius ?? BorderRadius.zero,
+      child: AnimatedOpacity(
+        opacity: 1.0,
+        duration: Duration(milliseconds: 300),
+        child: Image.asset(
+          imagePath,
+          fit: fit,
+          width: width,
+          height: height,
+          errorBuilder: (BuildContext context, Object exception, StackTrace? stackTrace) {
+            return Container(
+              width: width,
+              height: height,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: borderRadius,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    color: Colors.grey[600],
+                    size: 32.sp,
+                  ),
+                  SizedBox(height: 8.h),
+                  Text(
+                    'Failed to load image',
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      color: Colors.grey[600],
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    ),
+  );
+}
 
   Widget _buildHeroSection(bool isMobile, double screenHeight, double screenWidth) {
     return Container(
@@ -190,14 +306,16 @@ class _SiteScreenState extends State<SiteScreen> with TickerProviderStateMixin {
             ),
           ),
           
-          // Image Carousel
+          // Image Carousel with improved scrolling
           Expanded(
             child: Container(
               height: isMobile ? screenHeight * 0.4 : screenHeight * 0.6,
               child: ListView.builder(
                 controller: _heroScrollController,
                 scrollDirection: Axis.horizontal,
-                physics: BouncingScrollPhysics(), // Allow user interaction but smooth
+                physics: BouncingScrollPhysics(), // Better physics for user interaction
+                addAutomaticKeepAlives: false, // Improve performance
+                addRepaintBoundaries: false, // Improve performance
                 itemCount: 1000, // Large count for infinite scroll effect
                 itemBuilder: (context, index) {
                   final images = [
@@ -215,11 +333,11 @@ class _SiteScreenState extends State<SiteScreen> with TickerProviderStateMixin {
                     width: isMobile ? screenWidth * 0.85 : 800.w,
                     height: isMobile ? screenHeight * 0.3 : 500.h,
                     margin: EdgeInsets.symmetric(horizontal: 8.w),
-                    decoration: BoxDecoration(
-                      image: DecorationImage(
-                        image: AssetImage(imagePath),
-                        fit: BoxFit.cover,
-                      ),
+                    child: _buildImageWithLoading(
+                      imagePath,
+                      fit: BoxFit.cover,
+                      width: isMobile ? screenWidth * 0.85 : 800.w,
+                      height: isMobile ? screenHeight * 0.3 : 500.h,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
@@ -262,13 +380,15 @@ class _SiteScreenState extends State<SiteScreen> with TickerProviderStateMixin {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Logo
+          // Logo with loading state
           SizedBox(
             height: isMobile ? 180.h : 200.h,
             width: isMobile ? 180.w : 200.w,
-            child: Image.asset(
+            child: _buildImageWithLoading(
               'assets/images/M02_01.png',
               fit: BoxFit.contain,
+              width: isMobile ? 180.w : 200.w,
+              height: isMobile ? 180.h : 200.h,
             ),
           ),
           
@@ -389,29 +509,25 @@ class _SiteScreenState extends State<SiteScreen> with TickerProviderStateMixin {
                   
                   SizedBox(height: 30.h),
                   
-                  // Main image
-                  Container(
+                  // Main image with loading state
+                  _buildImageWithLoading(
+                    'assets/images/pexels-tanfeez-10699355.jpg',
+                    fit: BoxFit.cover,
                     width: screenWidth * 0.9,
                     height: screenHeight * 0.25,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      image: DecorationImage(
-                        image: AssetImage('assets/images/pexels-tanfeez-10699355.jpg'),
-                        fit: BoxFit.cover,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 8,
+                        offset: Offset(0, 4),
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 8,
-                          offset: Offset(0, 4),
-                        ),
-                      ],
-                    ),
+                    ],
                   ).animate().fadeIn(duration: 600.ms).scale(),
                   
                   SizedBox(height: 30.h),
                   
-                  // Services scroll
+                  // Services scroll with improved performance
                   Expanded(
                     child: Container(
                       color: Colors.black,
@@ -422,6 +538,8 @@ class _SiteScreenState extends State<SiteScreen> with TickerProviderStateMixin {
                             controller: _servicesScrollController,
                             scrollDirection: Axis.horizontal,
                             physics: BouncingScrollPhysics(),
+                            addAutomaticKeepAlives: false,
+                            addRepaintBoundaries: false,
                             itemCount: 1000,
                             itemBuilder: (context, index) {
                               final services = [
@@ -452,10 +570,11 @@ class _SiteScreenState extends State<SiteScreen> with TickerProviderStateMixin {
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Image.asset(
+                                    _buildImageWithLoading(
                                       service['icon']!,
                                       height: 40.h,
                                       width: 40.w,
+                                      fit: BoxFit.contain,
                                     ),
                                     SizedBox(height: 8.h),
                                     Text(
@@ -499,27 +618,23 @@ class _SiteScreenState extends State<SiteScreen> with TickerProviderStateMixin {
                   ),
                 ),
                 
-                // Main image
+                // Main image with loading state
                 Positioned(
                   left: screenWidth * 0.05,
                   top: screenHeight * 0.2,
-                  child: Container(
+                  child: _buildImageWithLoading(
+                    'assets/images/pexels-tanfeez-10699355.jpg',
+                    fit: BoxFit.cover,
                     width: screenWidth * 0.35,
                     height: screenHeight * 0.6,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      image: DecorationImage(
-                        image: AssetImage('assets/images/pexels-tanfeez-10699355.jpg'),
-                        fit: BoxFit.cover,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: Offset(0, 6),
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.3),
-                          blurRadius: 12,
-                          offset: Offset(0, 6),
-                        ),
-                      ],
-                    ),
+                    ],
                   ).animate().fadeIn(duration: 800.ms).slideY(),
                 ),
                 
@@ -605,7 +720,7 @@ class _SiteScreenState extends State<SiteScreen> with TickerProviderStateMixin {
                     SizedBox(height: 30.h),
                     _buildServiceCard('IOT', [
                       '''Product Engineering 
-                         Services''',
+                      Services''',
                       'Designing',
                       'Software Services',
                       'PoC Development',
@@ -663,15 +778,11 @@ class _SiteScreenState extends State<SiteScreen> with TickerProviderStateMixin {
               physics: BouncingScrollPhysics(),
               child: Column(
                 children: [
-                  Container(
+                  _buildImageWithLoading(
+                    'assets/images/Frame 52.png',
+                    fit: BoxFit.cover,
                     width: double.infinity,
                     height: screenHeight * 0.3,
-                    decoration: BoxDecoration(
-                      image: DecorationImage(
-                        image: AssetImage('assets/images/Frame 52.png'),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
                   ),
                   Padding(
                     padding: EdgeInsets.all(20.w),
@@ -691,15 +802,11 @@ class _SiteScreenState extends State<SiteScreen> with TickerProviderStateMixin {
             )
           : Stack(
               children: [
-                Container(
+                _buildImageWithLoading(
+                  'assets/images/Frame 52.png',
+                  fit: BoxFit.cover,
                   width: double.infinity,
                   height: screenHeight,
-                  decoration: BoxDecoration(
-                    image: DecorationImage(
-                      image: AssetImage('assets/images/Frame 52.png'),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
                 ),
                 Positioned(
                   left: 100.w,

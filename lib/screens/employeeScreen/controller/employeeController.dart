@@ -23,10 +23,28 @@ class Employeecontroller extends GetxController {
   void onInit() {     
     super.onInit();     
     print("EmployeeController onInit");
+    
+    // First, try to get employee name from arguments (for fresh navigation)
     if (Get.arguments != null) {       
       employeeName.value = Get.arguments.toString();
-      print("Setting employeeName to: ${employeeName.value}");
-    }          
+      // Store it in persistent storage for future refreshes
+      box.write('employeeName', employeeName.value);
+      print("Setting employeeName from arguments to: ${employeeName.value}");
+    } else {
+      // If no arguments (page refresh), try to get from storage
+      final storedName = box.read('employeeName');
+      if (storedName != null && storedName.isNotEmpty) {
+        employeeName.value = storedName;
+        print("Retrieved employeeName from storage: ${employeeName.value}");
+      } else {
+        // Fallback: try to get from the stored 'name' field
+        final fallbackName = box.read('name');
+        if (fallbackName != null && fallbackName.isNotEmpty) {
+          employeeName.value = fallbackName;
+          print("Using fallback employeeName from 'name': ${employeeName.value}");
+        }
+      }
+    }
     
     // Set the default option to "Home" when controller initializes     
     selectedOption.value = "Home";
@@ -40,10 +58,12 @@ class Employeecontroller extends GetxController {
     final token = box.read('token');
     final userId = box.read('_id');
     final userName = box.read('name');
+    final storedEmployeeName = box.read('employeeName');
     
     print('Stored token: ${token != null ? (token.length > 10 ? token.substring(0, 10) + '...' : token) : 'null'}');
     print('Stored userId: $userId');
     print('Stored userName: $userName');
+    print('Stored employeeName: $storedEmployeeName');
   }
   
   // logout   
@@ -80,7 +100,12 @@ class Employeecontroller extends GetxController {
         // Clear token and other user data         
         box.remove('token');         
         box.remove('_id');         
-        box.remove('name');                  
+        box.remove('name');
+        box.remove('employeeName'); // Also remove the stored employee name
+        
+        // Clear the observable values
+        employeeName.value = "";
+        selectedOption.value = "Home";
         
         // Show success message         
         Get.snackbar(           

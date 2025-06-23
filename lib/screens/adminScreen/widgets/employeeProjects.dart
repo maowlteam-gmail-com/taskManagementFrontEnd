@@ -176,16 +176,17 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
       return 'Invalid Date';
     }
   }
-
-  String formatDateTime(String? dateString) {
-    if (dateString == null) return 'N/A';
-    try {
-      final date = DateTime.parse(dateString);
-      return DateFormat('MMM d, yyyy - h:mm a').format(date);
-    } catch (e) {
-      return 'Invalid Date';
-    }
+String formatDateTime(String? dateString) {
+  if (dateString == null) return 'N/A';
+  try {
+    final date = DateTime.parse(dateString);
+    // Convert UTC to local time
+    final localDate = date.toLocal();
+    return DateFormat('MMM d, yyyy - h:mm a').format(localDate);
+  } catch (e) {
+    return 'Invalid Date';
   }
+}
 
   String capitalizeStatus(String status) {
     return status
@@ -206,7 +207,7 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
       case 'completed':
         return Colors.green;
       case 'cancelled':
-        return Colors.red;
+        return const Color.fromARGB(255, 160, 35, 26);
       case 'warning':
         return Colors.red;
       default:
@@ -1902,7 +1903,7 @@ Widget _buildTasksGridView() {
                                     ),
                                   ),
                                   SizedBox(height: 4.h),
-                                  Text(
+                                  SelectableText(
                                     description,
                                     style: TextStyle(
                                       fontSize: 14.sp,
@@ -1923,7 +1924,7 @@ Widget _buildTasksGridView() {
                                     ),
                                   ),
                                   SizedBox(height: 4.h),
-                                  Text(
+                                  SelectableText(
                                     caption,
                                     style: TextStyle(
                                       fontSize: 14.sp,

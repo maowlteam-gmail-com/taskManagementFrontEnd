@@ -345,7 +345,7 @@ class ProjectCard extends StatelessWidget {
       case 'completed':
         return Colors.green;
       case 'cancelled':
-        return Colors.red;
+        return const Color.fromARGB(255, 160, 35, 26);
       case 'warning':
         return Colors.red;
       default:

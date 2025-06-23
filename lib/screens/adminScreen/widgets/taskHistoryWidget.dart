@@ -528,7 +528,7 @@ Widget _buildHistoryItem(HistoryItem item, TaskHistoryController controller, Dow
                   ),
                 ),
                 SizedBox(height: 4.h),
-                Text(
+                SelectableText(
                   item.details!.description,
                   style: TextStyle(
                     fontSize: 14.sp,
@@ -565,7 +565,7 @@ Widget _buildHistoryItem(HistoryItem item, TaskHistoryController controller, Dow
                   ),
                 ),
                 SizedBox(height: 4.h),
-                Text(
+                SelectableText(
                   item.comment,
                   style: TextStyle(
                     fontSize: 14.sp,
