@@ -236,17 +236,18 @@ class TaskHistoryController extends GetxController {
     switch (status.toLowerCase()) {
       case 'pending':
         return Colors.orange;
-      case 'in_progress':
+      case 'due':
+        return Color(0xffFFC20A);
       case 'in progress':
         return Colors.blue;
       case 'completed':
         return Colors.green;
-      case 'cancelled':
-        return const Color.fromARGB(255, 160, 35, 26);
+      case 'delayed':
+        return const Color.fromARGB(255, 176, 102, 102);
       case 'warning':
         return Colors.red;
       default:
-        return Colors.grey;
+        return Colors.blue;
     }
   }
 
