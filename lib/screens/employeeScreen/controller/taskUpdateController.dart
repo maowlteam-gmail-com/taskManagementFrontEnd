@@ -7,6 +7,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:dio/dio.dart' as dio_pkg;
 import 'package:get_storage/get_storage.dart';
 import 'package:get/get.dart';
+import 'package:maowl/util/dio_config.dart';
 import 'package:mime/mime.dart';
 import 'package:path/path.dart' as path;
 
@@ -134,7 +135,8 @@ class TaskUpdateController extends GetxController {
         return;
       }
 
-      final dio = dio_pkg.Dio();
+     final dio = DioConfig.getDio();
+
       final response = await dio.get(
         '${dotenv.env['BASE_URL']}/api/getEmployees',
         options: dio_pkg.Options(

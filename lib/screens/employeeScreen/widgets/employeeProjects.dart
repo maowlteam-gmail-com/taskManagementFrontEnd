@@ -100,12 +100,20 @@ class EmployeeProjects extends StatelessWidget {
     );
   }
 
+  // String _getTaskCountText() {
+  //   final count = controller.tasks.length;
+  //   if (count == 0) return 'No tasks assigned';
+  //   if (count == 1) return '1 Task Assigned';
+  //   return '$count Tasks Assigned';
+  // }
   String _getTaskCountText() {
-    final count = controller.tasks.length;
-    if (count == 0) return 'No tasks assigned';
-    if (count == 1) return '1 Task Assigned';
-    return '$count Tasks Assigned';
-  }
+  final count = controller.filteredTasks.length; // Change from tasks to filteredTasks
+  final tabName = controller.selectedTabIndex.value == 0 ? 'Created' : 'Assigned';
+  
+  if (count == 0) return 'No $tabName tasks';
+  if (count == 1) return '1 $tabName Task';
+  return '$count $tabName Tasks';
+}
 
   Widget _buildRefreshButton() {
     return Container(
@@ -146,30 +154,138 @@ class EmployeeProjects extends StatelessWidget {
     );
   }
 
+  // Widget _buildContent() {
+  //   return Expanded(
+  //     child: Container(
+  //       color: Colors.grey[50],
+  //       child: Obx(() => _buildContentBasedOnState()),
+  //     ),
+  //   );
+  // }
   Widget _buildContent() {
-    return Expanded(
-      child: Container(
-        color: Colors.grey[50],
-        child: Obx(() => _buildContentBasedOnState()),
+  return Expanded(
+    child: Container(
+      color: Colors.grey[50],
+      child: Column(
+        children: [
+          _buildTabBar(), // Add this
+          Expanded(
+            child: Obx(() => _buildContentBasedOnState()),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
+Widget _buildTabBar() {
+  return Container(
+    margin: EdgeInsets.all(16.w),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.grey.withOpacity(0.1),
+          blurRadius: 8,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: Obx(() => Row(
+      children: [
+        Expanded(
+          child: _buildTabItem(
+            'Created',
+            0,
+            Icons.create_outlined,
+            controller.selectedTabIndex.value == 0,
+          ),
+        ),
+        Expanded(
+          child: _buildTabItem(
+            'Assigned',
+            1,
+            Icons.assignment_outlined,
+            controller.selectedTabIndex.value == 1,
+          ),
+        ),
+      ],
+    )),
+  );
+}
 
+Widget _buildTabItem(String title, int index, IconData icon, bool isSelected) {
+  return Material(
+    color: Colors.transparent,
+    child: InkWell(
+      onTap: () => controller.switchTab(index),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 12.w),
+        decoration: BoxDecoration(
+          gradient: isSelected
+              ? LinearGradient(
+                  colors: [Colors.grey[800]!, Colors.grey[700]!],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 18.sp,
+              color: isSelected ? Colors.white : Colors.grey[600],
+            ),
+            SizedBox(width: 8.w),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w600,
+                color: isSelected ? Colors.white : Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+  // Widget _buildContentBasedOnState() {
+  //   if (controller.isLoading.value) {
+  //     return _buildLoadingState();
+  //   }
+
+  //   if (controller.errorMessage.value.isNotEmpty) {
+  //     return _buildErrorState();
+  //   }
+
+  //   if (controller.tasks.isEmpty) {
+  //     return _buildEmptyState();
+  //   }
+
+  //   return _buildTaskGrid();
+  // }
   Widget _buildContentBasedOnState() {
-    if (controller.isLoading.value) {
-      return _buildLoadingState();
-    }
-
-    if (controller.errorMessage.value.isNotEmpty) {
-      return _buildErrorState();
-    }
-
-    if (controller.tasks.isEmpty) {
-      return _buildEmptyState();
-    }
-
-    return _buildTaskGrid();
+  if (controller.isLoading.value) {
+    return _buildLoadingState();
   }
+
+  if (controller.errorMessage.value.isNotEmpty) {
+    return _buildErrorState();
+  }
+
+  if (controller.filteredTasks.isEmpty) { // Change from tasks to filteredTasks
+    return _buildEmptyState();
+  }
+
+  return _buildTaskGrid();
+}
 
   Widget _buildLoadingState() {
     return Center(
@@ -290,21 +406,36 @@ class EmployeeProjects extends StatelessWidget {
     );
   }
 
+  // Widget _buildTaskGrid() {
+  //   return RefreshIndicator(
+  //     onRefresh: () async => controller.fetchTasks(),
+  //     color: Colors.grey[800],
+  //     backgroundColor: Colors.white,
+  //     child: Padding(
+  //       padding: EdgeInsets.all(16.w),
+  //       child: LayoutBuilder(
+  //         builder: (context, constraints) {
+  //           return _buildResponsiveGrid(constraints);
+  //         },
+  //       ),
+  //     ),
+  //   );
+  // }
   Widget _buildTaskGrid() {
-    return RefreshIndicator(
-      onRefresh: () async => controller.fetchTasks(),
-      color: Colors.grey[800],
-      backgroundColor: Colors.white,
-      child: Padding(
-        padding: EdgeInsets.all(16.w),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return _buildResponsiveGrid(constraints);
-          },
-        ),
+  return RefreshIndicator(
+    onRefresh: () async => controller.fetchTasks(),
+    color: Colors.grey[800],
+    backgroundColor: Colors.white,
+    child: Padding(
+      padding: EdgeInsets.all(16.w),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return _buildResponsiveGrid(constraints);
+        },
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildResponsiveGrid(BoxConstraints constraints) {
     final isMobile = constraints.maxWidth < 600;
@@ -324,29 +455,42 @@ class EmployeeProjects extends StatelessWidget {
       childAspectRatio = 0.8; // Taller cards for desktop
     }
 
-    return GridView.builder(
-      physics: const AlwaysScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        childAspectRatio: childAspectRatio,
-        crossAxisSpacing: 16.w,
-        mainAxisSpacing: 16.h,
-      ),
-      itemCount: controller.tasks.length,
-      itemBuilder: (context, index) => _buildTaskCard(index, isMobile),
-    );
+    // return GridView.builder(
+    //   physics: const AlwaysScrollableScrollPhysics(),
+    //   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+    //     crossAxisCount: crossAxisCount,
+    //     childAspectRatio: childAspectRatio,
+    //     crossAxisSpacing: 16.w,
+    //     mainAxisSpacing: 16.h,
+    //   ),
+    //   itemCount: controller.tasks.length,
+    //   itemBuilder: (context, index) => _buildTaskCard(index, isMobile),
+    // );
+     return GridView.builder(
+    physics: const AlwaysScrollableScrollPhysics(),
+    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: crossAxisCount,
+      childAspectRatio: childAspectRatio,
+      crossAxisSpacing: 16.w,
+      mainAxisSpacing: 16.h,
+    ),
+    itemCount: controller.filteredTasks.length, // Change from tasks to filteredTasks
+    itemBuilder: (context, index) => _buildTaskCard(index, isMobile),
+  );
   }
 
   Widget _buildTaskCard(int index, bool isMobile) {
     if (index >= controller.tasks.length) return const SizedBox.shrink();
 
-    final task = controller.tasks[index];
+   // final task = controller.tasks[index];
+   final task = controller.filteredTasks[index];
     return _TaskCard(
       task: task,
       controller: controller,
       isMobile: isMobile,
     );
   }
+  
 }
 
 class _TaskCard extends StatelessWidget {
@@ -359,7 +503,34 @@ class _TaskCard extends StatelessWidget {
     required this.controller,
     required this.isMobile,
   });
-
+Widget _buildEmptyState() {
+  final tabName = controller.selectedTabIndex.value == 0 ? 'created by you' : 'assigned to you';
+  
+  return Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // ... existing container and icon ...
+        Text(
+          'No tasks found!',
+          style: TextStyle(
+            fontSize: 24.sp,
+            fontWeight: FontWeight.bold,
+            color: Colors.grey[700],
+          ),
+        ),
+        SizedBox(height: 8.h),
+        Text(
+          'No tasks $tabName at the moment',
+          style: TextStyle(
+            color: Colors.grey[500],
+            fontSize: 16.sp,
+          ),
+        ),
+      ],
+    ),
+  );
+}
   @override
   Widget build(BuildContext context) {
     final taskInfo = _extractTaskInfo();

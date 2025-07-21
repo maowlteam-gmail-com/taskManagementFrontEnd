@@ -5,17 +5,16 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:maowl/screens/adminScreen/controller/projectTaskController.dart';
 import 'package:maowl/screens/adminScreen/model/taskHistoryResponse.dart';
+import 'package:maowl/util/dio_config.dart';
 
 class TaskHistoryController extends GetxController {
-  final Dio _dio = Dio();
+  final Dio _dio = DioConfig.getDio();
   final GetStorage _storage = GetStorage();
-  
-  // Observable variables
+
   var isLoading = false.obs;
   var errorMessage = ''.obs;
   var taskHistory = Rxn<TaskHistoryResponse>();
-  
-  // Current task info
+
   var selectedTaskId = ''.obs;
   var selectedTaskName = ''.obs;
   var selectedProjectId = ''.obs;
@@ -24,66 +23,22 @@ class TaskHistoryController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    _setupDioInterceptors();
-  }
-
-  void _setupDioInterceptors() {
-    _dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) {
-          print('REQUEST: ${options.method} ${options.uri}');
-          print('HEADERS: ${options.headers}');
-          handler.next(options);
-        },
-        onResponse: (response, handler) {
-          print('RESPONSE: ${response.statusCode} ${response.data}');
-          handler.next(response);
-        },
-        onError: (error, handler) {
-          print('ERROR: ${error.response?.statusCode} ${error.response?.data}');
-          print('ERROR MESSAGE: ${error.message}');
-          handler.next(error);
-        },
-      ),
-    );
-  }
-
-  String? _getAuthToken() {
-    try {
-      return _storage.read('auth_token') ?? _storage.read('token') ?? _storage.read('access_token');
-    } catch (e) {
-      print('Error getting auth token: $e');
-      return null;
-    }
   }
 
   Future<void> fetchTaskHistory(String taskId) async {
     try {
       isLoading.value = true;
       errorMessage.value = '';
-      
+
       final baseUrl = dotenv.env['BASE_URL'];
       if (baseUrl == null || baseUrl.isEmpty) {
         throw Exception('Base URL not configured');
       }
 
-      final token = _getAuthToken();
-      print('Auth token: ${token != null ? 'Found' : 'Not found'}');
-
-      final response = await _dio.get(
-        '$baseUrl/api/tasks/getTaskHistory/$taskId',
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            if (token != null) 'Authorization': 'Bearer $token',
-          },
-        ),
-      );
+      final response = await _dio.get('$baseUrl/api/tasks/getTaskHistory/$taskId');
 
       if (response.statusCode == 200) {
         final data = response.data;
-        print('Task History API Response: $data');
-        
         if (data['success'] == true) {
           taskHistory.value = TaskHistoryResponse.fromJson(data);
         } else {
@@ -93,43 +48,9 @@ class TaskHistoryController extends GetxController {
         throw Exception('Server error: ${response.statusCode}');
       }
     } on DioException catch (e) {
-      String errorMsg = 'Network error occurred';
-      
-      if (e.response != null) {
-        final statusCode = e.response!.statusCode;
-        final responseData = e.response!.data;
-        
-        print('DioException - Status: $statusCode, Data: $responseData');
-        
-        switch (statusCode) {
-          case 401:
-            errorMsg = 'Authentication failed. Please login again.';
-            break;
-          case 403:
-            errorMsg = 'Access denied. You don\'t have permission to view this task history.';
-            break;
-          case 404:
-            errorMsg = 'Task not found or no history available.';
-            break;
-          case 500:
-            errorMsg = 'Server error. Please try again later.';
-            break;
-          default:
-            errorMsg = responseData['message'] ?? 'Server error: $statusCode';
-        }
-      } else if (e.type == DioExceptionType.connectionTimeout) {
-        errorMsg = 'Connection timeout. Please check your internet connection.';
-      } else if (e.type == DioExceptionType.receiveTimeout) {
-        errorMsg = 'Server response timeout. Please try again.';
-      } else {
-        errorMsg = 'Network error: ${e.message}';
-      }
-      
-      errorMessage.value = errorMsg;
-      print('Error fetching task history: $e');
+      errorMessage.value = _handleDioError(e, context: "fetching task history");
     } catch (e) {
       errorMessage.value = 'Unexpected error: ${e.toString()}';
-      print('Error fetching task history: $e');
     } finally {
       isLoading.value = false;
     }
@@ -143,39 +64,25 @@ class TaskHistoryController extends GetxController {
     fetchTaskHistory(taskId);
   }
 
-  // Fixed back navigation method - don't clear state before navigation
   void backToTasks() {
     try {
-      // Check if we have project context to navigate back to
-      if (selectedProjectId.value.isNotEmpty) {
-        // Ensure ProjectTaskController has the correct project selected
-        if (Get.isRegistered<ProjectTaskController>()) {
-          final projectController = Get.find<ProjectTaskController>();
-          if (projectController.selectedProjectId.value != selectedProjectId.value) {
-            projectController.selectProject(selectedProjectId.value, selectedProjectName.value);
-          }
+      if (selectedProjectId.value.isNotEmpty && Get.isRegistered<ProjectTaskController>()) {
+        final controller = Get.find<ProjectTaskController>();
+        if (controller.selectedProjectId.value != selectedProjectId.value) {
+          controller.selectProject(selectedProjectId.value, selectedProjectName.value);
         }
       }
-      
-      // Navigate back
       Get.back();
-      
-      // Clear the state after navigation
       _clearHistoryState();
     } catch (e) {
       print('Error in backToTasks: $e');
-      // Fallback navigation
       Get.back();
     }
   }
 
-  // Alternative method to navigate to tasks route directly
   void backToTasksRoute() {
     try {
-      // Navigate to tasks route directly first
       Get.offNamed('/tasks');
-      
-      // Then clear state
       _clearHistoryState();
     } catch (e) {
       print('Error in backToTasksRoute: $e');
@@ -183,18 +90,12 @@ class TaskHistoryController extends GetxController {
     }
   }
 
-  // Method to navigate back to projects (if needed)
   void backToProjects() {
     try {
       if (Get.isRegistered<ProjectTaskController>()) {
-        final projectController = Get.find<ProjectTaskController>();
-        projectController.backToProjects();
+        Get.find<ProjectTaskController>().backToProjects();
       }
-      
-      // Navigate back to projects
       Get.offAllNamed('/projects');
-      
-      // Clear state after navigation
       _clearHistoryState();
     } catch (e) {
       print('Error in backToProjects: $e');
@@ -202,13 +103,11 @@ class TaskHistoryController extends GetxController {
     }
   }
 
-  // Helper method to clear history state
   void _clearHistoryState() {
     selectedTaskId.value = '';
     selectedTaskName.value = '';
     taskHistory.value = null;
     errorMessage.value = '';
-    // Keep project info for proper navigation context
   }
 
   Future<void> refreshTaskHistory() async {
@@ -221,17 +120,15 @@ class TaskHistoryController extends GetxController {
     errorMessage.value = '';
   }
 
-  // Helper method to format date
   String formatDateTime(String dateTimeString) {
     try {
-      final dateTime = DateTime.parse(dateTimeString);
-      return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
-    } catch (e) {
+      final dt = DateTime.parse(dateTimeString);
+      return '${dt.day}/${dt.month}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    } catch (_) {
       return dateTimeString;
     }
   }
 
-  // Helper method to get status color
   Color getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'pending':
@@ -251,9 +148,39 @@ class TaskHistoryController extends GetxController {
     }
   }
 
-  // Helper method to capitalize status
-  String capitalizeStatus(String status) {
-    return status.toUpperCase().replaceAll('_', ' ');
+  String capitalizeStatus(String status) => status.toUpperCase().replaceAll('_', ' ');
+
+  String _handleDioError(DioException e, {String context = "API request"}) {
+    String message = 'Error occurred during $context.';
+
+    if (e.response != null) {
+      final status = e.response?.statusCode;
+      final data = e.response?.data;
+
+      switch (status) {
+        case 401:
+          return 'Authentication failed. Please login again.';
+        case 403:
+          return 'Access denied. You don\'t have permission.';
+        case 404:
+          return 'Task not found or no history available.';
+        case 500:
+          return data?['message'] ?? 'Server error. Please try again.';
+        default:
+          return data?['message'] ?? 'Unexpected server error [$status]';
+      }
+    }
+
+    switch (e.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.receiveTimeout:
+        return 'Connection timeout. Check your internet.';
+      case DioExceptionType.badCertificate:
+      case DioExceptionType.connectionError:
+        return 'Network connection error. Please try again.';
+      default:
+        return e.message ?? message;
+    }
   }
 
   @override

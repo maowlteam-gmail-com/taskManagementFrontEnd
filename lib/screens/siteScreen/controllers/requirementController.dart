@@ -5,9 +5,11 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:typed_data';
 import 'package:http_parser/http_parser.dart';
+import 'package:maowl/util/dio_config.dart';
 
 class RequirementController extends GetxController {
-  final dio.Dio _dio = dio.Dio();
+ // final dio.Dio _dio = dio.Dio();
+ final _dio = DioConfig.getDio();
   final isLoading = false.obs;
   final errorMessage = ''.obs;
   final isSuccess = false.obs;

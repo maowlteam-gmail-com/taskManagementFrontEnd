@@ -8,6 +8,7 @@ import 'package:get_storage/get_storage.dart';
 import 'package:maowl/screens/adminScreen/controller/downloadService.dart';
 import 'package:maowl/screens/employeeScreen/controller/employeeProjectController.dart';
 import 'package:maowl/screens/employeeScreen/widgets/employeeProjects.dart';
+import 'package:maowl/util/dio_config.dart';
 
 class TaskDetailScreen extends StatefulWidget {
   final employeeProjectController = Get.find<EmployeeProjectsController>();
@@ -21,7 +22,8 @@ class TaskDetailScreen extends StatefulWidget {
 
 class _TaskDetailScreenState extends State<TaskDetailScreen> {
   late Map<String, dynamic> _task;
-  final Dio _dio = Dio();
+ // final Dio _dio = Dio();
+ final _dio = DioConfig.getDio();
   final box = GetStorage();
   bool isLoading = false;
 

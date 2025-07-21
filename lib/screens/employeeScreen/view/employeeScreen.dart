@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:maowl/screens/employeeScreen/controller/employeeController.dart';
 import 'package:maowl/screens/employeeScreen/widgets/addTask.dart';
+import 'package:maowl/screens/employeeScreen/widgets/employeeHistoryScreen.dart' show EmployeeHistoryScreen;
 import 'package:maowl/screens/employeeScreen/widgets/employeeProjects.dart';
 import 'package:maowl/screens/employeeScreen/widgets/otherAssignments.dart';
 import 'package:maowl/screens/employeeScreen/widgets/sideMenu.dart';
@@ -82,10 +83,13 @@ class EmployeeScreen extends StatelessWidget {
                         
                         if (selectedOption == "Home") {
                           contentWidget = EmployeeProjects();
-                        } else if (selectedOption == "Create Task") {
+                        }
+                        else if (selectedOption == "Create Task") {
                           contentWidget = CreateTaskContent();
                         } else if (selectedOption == "Other Assignments"){
                           contentWidget = OtherAssignmentsScreen();
+                        }else if (selectedOption == "History") {
+                          contentWidget = EmployeeHistoryScreen();
                         }
                          else {
                           contentWidget = Center(

@@ -114,7 +114,7 @@ class SideMenu extends StatelessWidget {
                       if (Get.width < 600) Get.back();
                     },
                   ),
-                  
+                              
                   _buildMenuItem(
                     icon: Icons.task,
                     text: 'Create Task',
@@ -138,6 +138,19 @@ class SideMenu extends StatelessWidget {
                     layout: menuLayout,
                     onTap: () {
                       controller.setSelectedOption("Other Assignments");
+                      if (Get.width < 600) Get.back();
+                    },
+                  ),
+                  _buildMenuItem(
+                    icon: Icons.history,
+                    text: 'History',
+                    isIconOnly: isIconOnly,
+                    isMobile: isMobileView,
+                    iconSize: iconSize,
+                    fontSize: fontSize,
+                    layout: menuLayout,
+                    onTap: () {
+                      controller.setSelectedOption("History");
                       if (Get.width < 600) Get.back();
                     },
                   ),

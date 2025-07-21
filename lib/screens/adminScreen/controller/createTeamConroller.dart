@@ -3,11 +3,12 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:dio/dio.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:maowl/util/dio_config.dart'; 
 
 class CreateTeamController extends GetxController {
   final nameController = TextEditingController();
   final passwordController = TextEditingController();
-  final Dio _dio = Dio();
+  final Dio _dio = DioConfig.getDio(); 
   final box = GetStorage();
   var obscureText = true.obs;
 
@@ -16,32 +17,18 @@ class CreateTeamController extends GetxController {
     passwordController.clear();
   }
 
-   void togglePasswordVisbility() {
+  void togglePasswordVisbility() {
     obscureText.value = !obscureText.value;
   }
 
   void submitTeam() async {
-  final String name = nameController.text.trim();
-  final String password = passwordController.text.trim();
+    final String name = nameController.text.trim();
+    final String password = passwordController.text.trim();
 
-  if (name.isEmpty || password.isEmpty) {
-    Get.snackbar(
-      "Error",
-      "Please fill in all fields",
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.black87,
-      colorText: Colors.white,
-    );
-    return;
-  }
-
-  try {
-    final token = box.read('token');
-
-    if (token == null) {
+    if (name.isEmpty || password.isEmpty) {
       Get.snackbar(
         "Error",
-        "Authentication token not found",
+        "Please fill in all fields",
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.black87,
         colorText: Colors.white,
@@ -49,52 +36,42 @@ class CreateTeamController extends GetxController {
       return;
     }
 
-    print('token : $token');
+    try {
+      final requestData = {
+        "username": name,
+        "password": password
+      };
 
-    final requestData = {
-      "username": name,
-      "password": password
-    };
+      print("Sending request to create employee: $requestData");
 
-    print("Sending request to create employee: $requestData");
-
-    final response = await _dio.post(
-      '${dotenv.env['BASE_URL']}/api/createEmployee',
-      data: requestData,
-      options: Options(
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer $token"
-        }
-      )
-    );
-
-    print("Response status: ${response.statusCode}");
-    print("Response data: ${response.data}");
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      // Clear the text fields after successful submission
-      clearFields();
-      
-      Get.snackbar(
-        "Success",
-        "Team member created successfully",
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.black87,
-        colorText: Colors.white,
-        duration: Duration(seconds: 3),
+      final response = await _dio.post(
+        '${dotenv.env['BASE_URL']}/api/createEmployee',
+        data: requestData,
       );
-      
-      // Do not call Get.back() since it's not in a dialog
-    } else {
-      Get.snackbar(
-        "Failed",
-        "Failed to create team member: ${response.statusCode}",
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.black87,
-        colorText: Colors.white,
-      );
-    }
+
+      print("Response status: ${response.statusCode}");
+      print("Response data: ${response.data}");
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        clearFields();
+
+        Get.snackbar(
+          "Success",
+          "Team member created successfully",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.black87,
+          colorText: Colors.white,
+          duration: Duration(seconds: 3),
+        );
+      } else {
+        Get.snackbar(
+          "Failed",
+          "Failed to create team member: ${response.statusCode}",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.black87,
+          colorText: Colors.white,
+        );
+      }
     } on DioException catch (e) {
       print("DioError: ${e.type}");
       print("DioError response: ${e.response?.data}");

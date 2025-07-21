@@ -7,6 +7,8 @@ import 'package:get_storage/get_storage.dart';
 import 'package:intl/intl.dart';
 import 'dart:html' as html;
 
+import 'package:maowl/util/dio_config.dart';
+
 class RequirementModel {
   final String id;
   final String name;
@@ -85,8 +87,8 @@ class EmployeeModel {
 
 class HomeController extends GetxController {
   final box = GetStorage();
-  final dio = Dio();
-  
+  final dio = DioConfig.getDio();
+
   var isLoading = true.obs;
   var requirements = <RequirementModel>[].obs;
   var employees = <EmployeeModel>[].obs;
@@ -95,220 +97,158 @@ class HomeController extends GetxController {
   var isDownloading = false.obs;
   var isAssigning = false.obs;
   var isLoadingEmployees = false.obs;
-  
+
   @override
   void onInit() {
     super.onInit();
- 
-      fetchRequirements();
-
+    fetchRequirements();
   }
 
   Future<void> fetchRequirements() async {
     isLoading.value = true;
     error.value = '';
-    
     try {
-      final token = box.read('token');
-      final response = await dio.get(
-        '${dotenv.env['BASE_URL']}/requirement/filtered',
-        options: Options(
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer $token",
-          },
-        ),
-      );
-      
-      if (response.statusCode == 200) {
-        final data = response.data;
-        if (data['success'] == true) {
-          final List<dynamic> requirementsData = data['data'];
-          requirements.value = requirementsData
-              .map((item) => RequirementModel.fromJson(item))
-              .toList();
-        } else {
-          error.value = 'Failed to load requirements';
-        }
+      final response = await dio.get('${dotenv.env['BASE_URL']}/requirement/filtered');
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        requirements.value = (response.data['data'] as List)
+            .map((item) => RequirementModel.fromJson(item))
+            .toList();
       } else {
         error.value = 'Failed to load requirements';
       }
+    } on DioException catch (e) {
+      error.value = _handleDioError(e, "loading requirements");
     } catch (e) {
-      error.value = 'Error: ${e.toString()}';
+      error.value = 'Unexpected error: ${e.toString()}';
     } finally {
       isLoading.value = false;
     }
   }
-  
+
   Future<void> fetchEmployees() async {
-  isLoadingEmployees.value = true;
-  
-  try {
-    final token = box.read('token');
-    final response = await dio.get(
-      '${dotenv.env['BASE_URL']}/api/getEmployees',
-      options: Options(
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer $token",
-        },
-      ),
-    );
-    
-    if (response.statusCode == 200) {
-      final data = response.data;
-      if (data['success'] == true) {
-        final List<dynamic> employeesData = data['data'];
-        employees.value = employeesData
+    isLoadingEmployees.value = true;
+    try {
+      final response = await dio.get('${dotenv.env['BASE_URL']}/api/getEmployees');
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        employees.value = (response.data['data'] as List)
             .map((item) => EmployeeModel.fromJson(item))
             .toList();
       } else {
-        Get.snackbar(
-          'Error',
-          'Failed to load employees',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red.withOpacity(0.7),
-          colorText: Colors.white,
-        );
+        _showError("Failed to load employees");
       }
-    } else {
-      Get.snackbar(
-        'Error',
-        'Failed to load employees',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withOpacity(0.7),
-        colorText: Colors.white,
-      );
+    } on DioException catch (e) {
+      _showError(_handleDioError(e, "loading employees"));
+    } catch (e) {
+      _showError("Unexpected error: ${e.toString()}");
+    } finally {
+      isLoadingEmployees.value = false;
     }
-  } catch (e) {
-    Get.snackbar(
-      'Error',
-      'Error loading employees: ${e.toString()}',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.red.withOpacity(0.7),
-      colorText: Colors.white,
-    );
-  } finally {
-    isLoadingEmployees.value = false;
   }
-}
-  
+
   Future<void> downloadPdf(String requirementId, String fileName) async {
     isDownloading.value = true;
     downloadProgress.value = 0.0;
-    
+
     try {
-      final token = box.read('token');
       final response = await dio.get(
         '${dotenv.env['BASE_URL']}/requirement/$requirementId/download',
-        options: Options(
-          headers: {
-            "Authorization": "Bearer $token",
-          },
-          responseType: ResponseType.bytes,
-        ),
+        options: Options(responseType: ResponseType.bytes),
         onReceiveProgress: (received, total) {
           if (total != -1) {
             downloadProgress.value = received / total;
           }
         },
       );
-      
+
       if (response.statusCode == 200) {
-        // Create a blob from the PDF data
         final blob = html.Blob([response.data]);
-        // Create a URL for the blob
         final url = html.Url.createObjectUrlFromBlob(blob);
-        // Create an anchor element
         final anchor = html.AnchorElement(href: url)
           ..target = 'blank'
           ..download = fileName;
-          
-        // Trigger download
         anchor.click();
-        
-        // Clean up
         html.Url.revokeObjectUrl(url);
-        
-        Get.snackbar(
-          'Success',
-          'PDF downloaded successfully',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.black.withOpacity(0.7),
-          colorText: Colors.white,
-        );
+
+        _showSuccess("PDF downloaded successfully");
       } else {
-        Get.snackbar(
-          'Error',
-          'Failed to download PDF',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red.withOpacity(0.7),
-          colorText: Colors.white,
-        );
+        _showError("Failed to download PDF");
       }
+    } on DioException catch (e) {
+      _showError(_handleDioError(e, "downloading PDF"));
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Error downloading PDF: ${e.toString()}',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withOpacity(0.7),
-        colorText: Colors.white,
-      );
+      _showError("Unexpected error: ${e.toString()}");
     } finally {
       isDownloading.value = false;
       downloadProgress.value = 0.0;
     }
   }
-  
+
   Future<void> assignRequirement(String requirementId, String employeeId) async {
     isAssigning.value = true;
-    
+
     try {
-      final token = box.read('token');
       final response = await dio.patch(
         '${dotenv.env['BASE_URL']}/requirement/$requirementId/assign',
-        data: {
-          "employeeId": employeeId
-        },
-        options: Options(
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer $token",
-          },
-        ),
+        data: {"employeeId": employeeId},
       );
-      
+
       if (response.statusCode == 200) {
-        // Refresh the requirements list
         await fetchRequirements();
-        
-        Get.snackbar(
-          'Success',
-          'Requirement assigned successfully',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.black.withOpacity(0.7),
-          colorText: Colors.white,
-        );
+        _showSuccess("Requirement assigned successfully");
       } else {
-        Get.snackbar(
-          'Error',
-          'Failed to assign requirement',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red.withOpacity(0.7),
-          colorText: Colors.white,
-        );
+        _showError("Failed to assign requirement");
       }
+    } on DioException catch (e) {
+      _showError(_handleDioError(e, "assigning requirement"));
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Error assigning requirement: ${e.toString()}',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withOpacity(0.7),
-        colorText: Colors.white,
-      );
+      _showError("Unexpected error: ${e.toString()}");
     } finally {
       isAssigning.value = false;
     }
+  }
+
+  // Reusable error message handler
+  String _handleDioError(DioException e, String context) {
+    if (e.response != null) {
+      final status = e.response?.statusCode;
+      final data = e.response?.data;
+      switch (status) {
+        case 400:
+          return data?['message'] ?? "Bad request while $context.";
+        case 401:
+          return "Unauthorized access. Please login again.";
+        case 403:
+          return "Forbidden. You don’t have permission.";
+        case 404:
+          return "Not found during $context.";
+        case 500:
+          return data?['message'] ?? "Server error while $context.";
+        default:
+          return data?['message'] ?? "Unknown error [$status] during $context.";
+      }
+    } else if (e.type == DioExceptionType.connectionTimeout ||
+               e.type == DioExceptionType.receiveTimeout) {
+      return "Timeout while $context. Check your connection.";
+    } else if (e.type == DioExceptionType.connectionError) {
+      return "Connection error while $context.";
+    } else {
+      return e.message ?? "Network error during $context.";
+    }
+  }
+
+  // Toast helpers
+  void _showError(String message) {
+    Get.snackbar('Error', message,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.withOpacity(0.8),
+        colorText: Colors.white);
+  }
+
+  void _showSuccess(String message) {
+    Get.snackbar('Success', message,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green.withOpacity(0.8),
+        colorText: Colors.white);
   }
 }
 class HomeScreen extends StatelessWidget {

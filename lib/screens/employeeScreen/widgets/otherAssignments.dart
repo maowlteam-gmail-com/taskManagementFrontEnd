@@ -7,6 +7,8 @@ import 'package:get_storage/get_storage.dart';
 import 'package:intl/intl.dart';
 import 'dart:html' as html;
 
+import 'package:maowl/util/dio_config.dart';
+
 class RequirementModel {
   final String id;
   final String name;
@@ -53,8 +55,8 @@ class RequirementModel {
 
 class MyAssignmentsController extends GetxController {
   final box = GetStorage();
-  final dio = Dio();
-  
+  //final dio = Dio();
+  final dio = DioConfig.getDio();
   var isLoading = true.obs;
   var requirements = <RequirementModel>[].obs;
   var error = ''.obs;
