@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:maowl/colors/app_colors.dart';
 import 'package:maowl/screens/adminScreen/controller/projectController.dart';
 import 'package:maowl/screens/adminScreen/controller/projectTaskController.dart';
 import 'package:maowl/screens/adminScreen/model/projectModel.dart';
@@ -337,20 +338,20 @@ class ProjectCard extends StatelessWidget {
 
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
-       case 'pending':
-        return Colors.orange;
+      case 'pending':
+        return AppColors.pendingColor;
       case 'due':
-        return Color(0xffFFC20A);
+        return AppColors.dueColor;
       case 'in progress':
-        return Colors.blue;
+        return AppColors.inProgressColor;
       case 'completed':
-        return Colors.green;
+        return AppColors.completedColor;
       case 'delayed':
-        return const Color.fromARGB(255, 160, 35, 26);
+        return AppColors.delayedColor;
       case 'warning':
-        return Colors.red;
+        return AppColors.warningColor;
       default:
-        return Colors.blue;
+        return AppColors.inProgressColor;
     }
   }
 }

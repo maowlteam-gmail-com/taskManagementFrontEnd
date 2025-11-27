@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:dio/dio.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:intl/intl.dart';
+import 'package:maowl/colors/app_colors.dart';
 import 'package:maowl/screens/adminScreen/controller/downloadService.dart';
 import 'package:maowl/screens/adminScreen/widgets/collaboratorAvatar.dart';
 import 'package:maowl/util/dio_config.dart';
@@ -46,7 +47,16 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
     fetchTasks();
   }
 
-    Future<void> fetchTasks() async {
+  bool isFirstDateBeforeOrSame(String date1, String date2) {
+    // Convert string to DateTime
+    DateTime d1 = DateTime.parse(date1);
+    DateTime d2 = DateTime.parse(date2);
+
+    // Check if d1 is before or equal to d2
+    return d1.isBefore(d2) || d1.isAtSameMomentAs(d2);
+  }
+
+  Future<void> fetchTasks() async {
     isLoading.value = true;
     errorMessage.value = '';
 
@@ -55,9 +65,7 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
 
       final response = await _dio.get(
         '${dotenv.env['BASE_URL']}/api/tasks/getTaskByUserId/$employeeId',
-        options: Options(
-          headers: {"Content-Type": "application/json"},
-        ),
+        options: Options(headers: {"Content-Type": "application/json"}),
       );
 
       if (response.statusCode == 200) {
@@ -66,7 +74,8 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
           final dataList = responseBody['data'] as List;
           tasks.value = dataList.map((e) => e as Map<String, dynamic>).toList();
         } else {
-          errorMessage.value = "Unexpected response format: missing 'data' array";
+          errorMessage.value =
+              "Unexpected response format: missing 'data' array";
         }
       } else {
         errorMessage.value = "Failed to load tasks: ${response.statusCode}";
@@ -83,7 +92,7 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
   // Add this to your existing Obx variables
   var filterWorkDetails = [].obs;
 
-   Future<void> fetchTaskHistory(String taskId) async {
+  Future<void> fetchTaskHistory(String taskId) async {
     isLoadingHistory.value = true;
     historyError.value = '';
 
@@ -95,18 +104,23 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
 
       if (response.statusCode == 200) {
         final responseBody = response.data as Map<String, dynamic>;
-        if (responseBody.containsKey('history') && responseBody['history'] is List) {
+        if (responseBody.containsKey('history') &&
+            responseBody['history'] is List) {
           final historyList = responseBody['history'] as List;
-          taskHistory.value = historyList.map((e) => e as Map<String, dynamic>).toList();
+          taskHistory.value =
+              historyList.map((e) => e as Map<String, dynamic>).toList();
           filterWorkDetails.value =
-              taskHistory.where((item) => item['action'] == 'work_detail_added').toList();
+              taskHistory
+                  .where((item) => item['action'] == 'work_detail_added')
+                  .toList();
         } else {
           taskHistory.clear();
           filterWorkDetails.clear();
           historyError.value = "No history available for this task";
         }
       } else {
-        historyError.value = "Failed to load task history: ${response.statusCode}";
+        historyError.value =
+            "Failed to load task history: ${response.statusCode}";
       }
     } on DioException catch (e) {
       historyError.value = "Error fetching task history: ${e.message}";
@@ -117,7 +131,7 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
     }
   }
 
-   void viewTaskDetail(Map<String, dynamic> task) {
+  void viewTaskDetail(Map<String, dynamic> task) {
     selectedTask.value = task;
     showTaskDetail.value = true;
     if (task.containsKey('_id')) {
@@ -128,7 +142,7 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
     }
   }
 
-   void closeTaskDetail() {
+  void closeTaskDetail() {
     showTaskDetail.value = false;
   }
 
@@ -167,19 +181,19 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
   Color getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'pending':
-        return Colors.orange;
+        return AppColors.pendingColor;
       case 'due':
-        return Color(0xffFFC20A);
+        return AppColors.dueColor;
       case 'in progress':
-        return Colors.blue;
+        return AppColors.inProgressColor;
       case 'completed':
-        return Colors.green;
+        return AppColors.completedColor;
       case 'delayed':
-        return const Color.fromARGB(255, 160, 35, 26);
+        return AppColors.delayedColor;
       case 'warning':
-        return Colors.red;
+        return AppColors.warningColor;
       default:
-        return Colors.blue;
+        return AppColors.inProgressColor;
     }
   }
 
@@ -192,7 +206,7 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
     return 'Unknown User';
   }
 
-   Future<void> deleteTask(String taskId) async {
+  Future<void> deleteTask(String taskId) async {
     try {
       final response = await _dio.delete(
         '${dotenv.env['BASE_URL']}/api/tasks/deleteTask/$taskId',
@@ -230,11 +244,13 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
   }
 
   // show a confirmation dialog
- void showDeleteConfirmation(String taskId, String taskName) {
+  void showDeleteConfirmation(String taskId, String taskName) {
     Get.dialog(
       AlertDialog(
         title: Text('Delete Task'),
-        content: Text('Are you sure you want to delete "$taskName"? This action cannot be undone.'),
+        content: Text(
+          'Are you sure you want to delete "$taskName"? This action cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Get.back(),
@@ -739,21 +755,27 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
                                                                           4.h,
                                                                     ),
                                                                 decoration: BoxDecoration(
-                                                                  color: Colors
-                                                                      .blue
-                                                                      .withOpacity(
-                                                                        0.2,
-                                                                      ),
+                                                                  color:
+                                                                      isFirstDateBeforeOrSame(
+                                                                            latestWorkDetail['date'],
+                                                                            task['end_date'],
+                                                                          )
+                                                                          ? Colors
+                                                                              .blue[50]
+                                                                          : Colors
+                                                                              .red[50],
                                                                   borderRadius:
                                                                       BorderRadius.circular(
                                                                         12,
                                                                       ),
                                                                   border: Border.all(
-                                                                    color: Colors
-                                                                        .blue
-                                                                        .withOpacity(
-                                                                          0.5,
-                                                                        ),
+                                                                    color:
+                                                                        isFirstDateBeforeOrSame(
+                                                                              latestWorkDetail['date'],
+                                                                              task['end_date'],
+                                                                            )
+                                                                            ? AppColors.inProgressColor
+                                                                            : AppColors.delayedColor,
                                                                   ),
                                                                 ),
                                                                 child: Text(
@@ -765,8 +787,12 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
                                                                         FontWeight
                                                                             .bold,
                                                                     color:
-                                                                        Colors
-                                                                            .blue[700],
+                                                                        isFirstDateBeforeOrSame(
+                                                                              latestWorkDetail['date'],
+                                                                              task['end_date'],
+                                                                            )
+                                                                            ? AppColors.inProgressColor
+                                                                            : AppColors.delayedColor,
                                                                   ),
                                                                 ),
                                                               ),
@@ -1426,7 +1452,7 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
                         // Work Details Card
                         Padding(
                           padding: EdgeInsets.all(16),
-                          child: _buildWorkDetailsCard(),
+                          child: _buildWorkDetailsCard(task['end_date']),
                         ),
                       ],
                     ),
@@ -1455,7 +1481,7 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
                               ),
                               SizedBox(height: 16),
                               // Work Details Card
-                              _buildWorkDetailsCard(),
+                              _buildWorkDetailsCard(task['end_date']),
                             ],
                           ),
                         ),
@@ -1810,7 +1836,7 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
     );
   }
 
-  Widget _buildWorkDetailsCard() {
+  Widget _buildWorkDetailsCard(String endate) {
     // Inject the DownloadService using GetX
     final DownloadService downloadService = Get.put(DownloadService());
 
@@ -1984,10 +2010,22 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
                                   vertical: 4.h,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.blue[50],
+                                  color:
+                                      isFirstDateBeforeOrSame(
+                                            item['timestamp'] ?? item['date'],
+                                            endate,
+                                          )
+                                          ? Colors.blue[50]
+                                          : Colors.red[50],
                                   borderRadius: BorderRadius.circular(4.r),
                                   border: Border.all(
-                                    color: Colors.blue[300]!,
+                                    color:
+                                        isFirstDateBeforeOrSame(
+                                              item['timestamp'] ?? item['date'],
+                                              endate,
+                                            )
+                                            ? AppColors.inProgressColor
+                                            : AppColors.delayedColor,
                                     width: 1,
                                   ),
                                 ),
@@ -1996,7 +2034,13 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
                                   style: TextStyle(
                                     fontSize: 12.sp,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.blue[700],
+                                    color:
+                                        isFirstDateBeforeOrSame(
+                                              item['timestamp'] ?? item['date'],
+                                              endate,
+                                            )
+                                            ? AppColors.inProgressColor
+                                            : AppColors.delayedColor,
                                   ),
                                 ),
                               ),

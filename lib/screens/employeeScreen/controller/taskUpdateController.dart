@@ -7,6 +7,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:dio/dio.dart' as dio_pkg;
 import 'package:get_storage/get_storage.dart';
 import 'package:get/get.dart';
+import 'package:maowl/colors/app_colors.dart';
 import 'package:maowl/util/dio_config.dart';
 import 'package:mime/mime.dart';
 import 'package:path/path.dart' as path;
@@ -639,19 +640,19 @@ class TaskUpdateController extends GetxController {
   Color getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'pending':
-        return Colors.orange;
+        return AppColors.pendingColor;
       case 'due':
-        return Color(0xffFFC20A);
+        return AppColors.dueColor;
       case 'in progress':
-        return Colors.blue;
+        return AppColors.inProgressColor;
       case 'completed':
-        return Colors.green;
+        return AppColors.completedColor;
       case 'delayed':
-        return const Color.fromARGB(255, 160, 35, 26);
+        return AppColors.delayedColor;
       case 'warning':
-        return Colors.red;
+        return AppColors.warningColor;
       default:
-        return Colors.blue;
+        return AppColors.inProgressColor;
     }
   }
 

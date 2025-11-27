@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:maowl/colors/app_colors.dart';
 import 'package:maowl/screens/adminScreen/controller/projectTaskController.dart';
 import 'package:maowl/screens/adminScreen/model/taskHistoryResponse.dart';
 import 'package:maowl/util/dio_config.dart';
@@ -35,7 +36,9 @@ class TaskHistoryController extends GetxController {
         throw Exception('Base URL not configured');
       }
 
-      final response = await _dio.get('$baseUrl/api/tasks/getTaskHistory/$taskId');
+      final response = await _dio.get(
+        '$baseUrl/api/tasks/getTaskHistory/$taskId',
+      );
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -56,7 +59,12 @@ class TaskHistoryController extends GetxController {
     }
   }
 
-  void selectTask(String taskId, String taskName, {String? projectId, String? projectName}) {
+  void selectTask(
+    String taskId,
+    String taskName, {
+    String? projectId,
+    String? projectName,
+  }) {
     selectedTaskId.value = taskId;
     selectedTaskName.value = taskName;
     selectedProjectId.value = projectId ?? '';
@@ -66,10 +74,14 @@ class TaskHistoryController extends GetxController {
 
   void backToTasks() {
     try {
-      if (selectedProjectId.value.isNotEmpty && Get.isRegistered<ProjectTaskController>()) {
+      if (selectedProjectId.value.isNotEmpty &&
+          Get.isRegistered<ProjectTaskController>()) {
         final controller = Get.find<ProjectTaskController>();
         if (controller.selectedProjectId.value != selectedProjectId.value) {
-          controller.selectProject(selectedProjectId.value, selectedProjectName.value);
+          controller.selectProject(
+            selectedProjectId.value,
+            selectedProjectName.value,
+          );
         }
       }
       Get.back();
@@ -129,26 +141,36 @@ class TaskHistoryController extends GetxController {
     }
   }
 
+  bool isFirstDateBeforeOrSame(String date1, String date2) {
+    // Convert string to DateTime
+    DateTime d1 = DateTime.parse(date1);
+    DateTime d2 = DateTime.parse(date2);
+    
+    // Check if d1 is before or equal to d2
+    return d1.isBefore(d2) || d1.isAtSameMomentAs(d2);
+  }
+
   Color getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'pending':
-        return Colors.orange;
+        return AppColors.pendingColor;
       case 'due':
-        return Color(0xffFFC20A);
+        return AppColors.dueColor;
       case 'in progress':
-        return Colors.blue;
+        return AppColors.inProgressColor;
       case 'completed':
-        return Colors.green;
+        return AppColors.completedColor;
       case 'delayed':
-        return const Color.fromARGB(255, 176, 102, 102);
+        return AppColors.delayedColor;
       case 'warning':
-        return Colors.red;
+        return AppColors.warningColor;
       default:
-        return Colors.blue;
+        return AppColors.inProgressColor;
     }
   }
 
-  String capitalizeStatus(String status) => status.toUpperCase().replaceAll('_', ' ');
+  String capitalizeStatus(String status) =>
+      status.toUpperCase().replaceAll('_', ' ');
 
   String _handleDioError(DioException e, {String context = "API request"}) {
     String message = 'Error occurred during $context.';

@@ -4,6 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:intl/intl.dart';
+import 'package:maowl/colors/app_colors.dart';
 import 'package:maowl/util/dio_config.dart';
 
 class EmployeeProjectsController extends GetxController {
@@ -239,19 +240,19 @@ void filterTasks() {
   Color getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'pending':
-        return Colors.orange;
+        return AppColors.pendingColor;
       case 'due':
-        return Color(0xffFFC20A);
+        return AppColors.dueColor;
       case 'in progress':
-        return Colors.blue;
+        return AppColors.inProgressColor;
       case 'completed':
-        return Colors.green;
+        return AppColors.completedColor;
       case 'delayed':
-        return const Color.fromARGB(255, 160, 35, 26);
+        return AppColors.delayedColor;
       case 'warning':
-        return Colors.red;
+        return AppColors.warningColor;
       default:
-        return Colors.blue;
+        return AppColors.inProgressColor;
     }
   }
 

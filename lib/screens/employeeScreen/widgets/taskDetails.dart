@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:dio/dio.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:maowl/colors/app_colors.dart';
 import 'package:maowl/screens/adminScreen/controller/downloadService.dart';
 import 'package:maowl/screens/employeeScreen/controller/employeeProjectController.dart';
 import 'package:maowl/screens/employeeScreen/widgets/employeeProjects.dart';
@@ -22,8 +23,8 @@ class TaskDetailScreen extends StatefulWidget {
 
 class _TaskDetailScreenState extends State<TaskDetailScreen> {
   late Map<String, dynamic> _task;
- // final Dio _dio = Dio();
- final _dio = DioConfig.getDio();
+  // final Dio _dio = Dio();
+  final _dio = DioConfig.getDio();
   final box = GetStorage();
   bool isLoading = false;
 
@@ -39,6 +40,15 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
 
     // Initialize DownloadService
     _downloadService = Get.put(DownloadService());
+  }
+
+  bool isFirstDateBeforeOrSame(String date1, String date2) {
+    // Convert string to DateTime
+    DateTime d1 = DateTime.parse(date1);
+    DateTime d2 = DateTime.parse(date2);
+    
+    // Check if d1 is before or equal to d2
+    return d1.isBefore(d2) || d1.isAtSameMomentAs(d2);
   }
 
   String formatDate(String? dateString) {
@@ -77,20 +87,20 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
 
   Color getStatusColor(String status) {
     switch (status.toLowerCase()) {
-       case 'pending':
-        return Colors.orange;
+      case 'pending':
+        return AppColors.pendingColor;
       case 'due':
-       return Color(0xffFFC20A);
+        return AppColors.dueColor;
       case 'in progress':
-        return Colors.blue;
+        return AppColors.inProgressColor;
       case 'completed':
-        return Colors.green;
+        return AppColors.completedColor;
       case 'delayed':
-        return const Color.fromARGB(255, 160, 35, 26);
+        return AppColors.delayedColor;
       case 'warning':
-        return Colors.red;
+        return AppColors.warningColor;
       default:
-        return Colors.blue;
+        return AppColors.inProgressColor;
     }
   }
 
@@ -102,9 +112,10 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
 
     double totalHours = 0.0;
     final List<dynamic> workDetails = _task['work_details'] as List;
-    
+
     for (var workDetail in workDetails) {
-      if (workDetail is Map<String, dynamic> && workDetail['hours_spent'] != null) {
+      if (workDetail is Map<String, dynamic> &&
+          workDetail['hours_spent'] != null) {
         try {
           // Handle both int and double values
           final hoursSpent = workDetail['hours_spent'];
@@ -120,7 +131,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
         }
       }
     }
-    
+
     return totalHours;
   }
 
@@ -317,9 +328,10 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
         ),
         SizedBox(height: 8.h),
         Column(
-          children: attachments
-              .map((attachment) => _buildAttachmentItem(attachment))
-              .toList(),
+          children:
+              attachments
+                  .map((attachment) => _buildAttachmentItem(attachment))
+                  .toList(),
         ),
       ],
     );
@@ -329,22 +341,25 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   Widget _buildAttachmentItem(dynamic attachment) {
     if (attachment is! Map<String, dynamic>) return SizedBox.shrink();
 
-    final fileName = attachment['filename'] ?? 
-                    attachment['fileName'] ?? 
-                    attachment['originalName'] ?? 
-                    'Unknown File';
-    
+    final fileName =
+        attachment['filename'] ??
+        attachment['fileName'] ??
+        attachment['originalName'] ??
+        'Unknown File';
+
     // Fix: Use 'file_id' which matches your API response structure
-    final fileId = attachment['file_id'] ?? 
-                   attachment['_id'] ?? 
-                   attachment['id'] ?? 
-                   attachment['fileId'] ?? 
-                   '';
-    
-    final fileType = attachment['type'] ?? 
-                     attachment['fileType'] ?? 
-                     attachment['mimetype'] ?? 
-                     '';
+    final fileId =
+        attachment['file_id'] ??
+        attachment['_id'] ??
+        attachment['id'] ??
+        attachment['fileId'] ??
+        '';
+
+    final fileType =
+        attachment['type'] ??
+        attachment['fileType'] ??
+        attachment['mimetype'] ??
+        '';
 
     // Debug print to see what we're getting
     print('Attachment data: $attachment');
@@ -355,7 +370,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     // Choose icon based on file type
     IconData fileIcon;
     Color iconColor;
-    
+
     String typeCheck = fileType.toLowerCase();
     if (typeCheck.contains('image')) {
       fileIcon = Icons.image;
@@ -410,11 +425,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
           ),
           child: Row(
             children: [
-              Icon(
-                fileIcon,
-                size: 24.sp,
-                color: iconColor,
-              ),
+              Icon(fileIcon, size: 24.sp, color: iconColor),
               SizedBox(width: 12.w),
               Expanded(
                 child: Column(
@@ -451,11 +462,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                   color: Colors.blue[600],
                   borderRadius: BorderRadius.circular(6.r),
                 ),
-                child: Icon(
-                  Icons.download,
-                  size: 18.sp,
-                  color: Colors.white,
-                ),
+                child: Icon(Icons.download, size: 18.sp, color: Colors.white),
               ),
             ],
           ),
@@ -463,23 +470,24 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       ),
     );
   }
+
   // Add this helper method to your _TaskDetailScreenState class:
-Color _generateAvatarColor(String username) {
-  // Generate a consistent color based on username
-  final colors = [
-    Colors.blue[600]!,
-    Colors.green[600]!,
-    Colors.orange[600]!,
-    Colors.purple[600]!,
-    Colors.red[600]!,
-    Colors.teal[600]!,
-    Colors.indigo[600]!,
-    Colors.pink[600]!,
-  ];
-  
-  int hash = username.hashCode;
-  return colors[hash.abs() % colors.length];
-}
+  Color _generateAvatarColor(String username) {
+    // Generate a consistent color based on username
+    final colors = [
+      Colors.blue[600]!,
+      Colors.green[600]!,
+      Colors.orange[600]!,
+      Colors.purple[600]!,
+      Colors.red[600]!,
+      Colors.teal[600]!,
+      Colors.indigo[600]!,
+      Colors.pink[600]!,
+    ];
+
+    int hash = username.hashCode;
+    return colors[hash.abs() % colors.length];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -560,287 +568,347 @@ Color _generateAvatarColor(String username) {
             ),
           ],
         ),
-        body: isLoading
-            ? Center(child: CircularProgressIndicator())
-            : SafeArea(
-                child: Container(
-                  color: Colors.white,
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Task Information Section
-                        Container(
-                          margin: EdgeInsets.all(20.sp),
-                          padding: EdgeInsets.all(16.sp),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[50],
-                            borderRadius: BorderRadius.circular(12.r),
-                            border: Border.all(color: Colors.grey[200]!),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Task Information',
-                                style: TextStyle(
-                                  fontSize: 18.sp,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                              SizedBox(height: 16.h),
-                              _buildInfoRow('Task:', taskName),
-                              _buildInfoRow('Description:', description),
-                              _buildInfoRow('Start Date:', startDate),
-                              _buildInfoRow('End Date:', endDate),
-                              _buildInfoRow('Created By:', createdBy),
-                              _buildInfoRow('Assigned To:', assignedTo),
-                              _buildInfoRow('Last Updated:', updatedAt),
-                              // Add total hours spent
-                              _buildInfoRow('Total Hours Spent:', '${totalHours.toStringAsFixed(1)} hrs'),
-                            ],
-                          ),
-                        ),
-
-                        // Work History Section
-                        Padding(
-                          padding: EdgeInsets.all(20.sp),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Work History',
-                                style: TextStyle(
-                                  fontSize: 18.sp,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              SizedBox(height: 12.h),
-                              if (workDetails.isEmpty)
-                                Center(
-                                  child: Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      vertical: 30.h,
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        Icon(
-                                          Icons.history_outlined,
-                                          size: 48.sp,
-                                          color: Colors.grey[400],
-                                        ),
-                                        SizedBox(height: 16.h),
-                                        Text(
-                                          'No work history available',
-                                          style: TextStyle(
-                                            fontSize: 16.sp,
-                                            color: Colors.grey[600],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+        body:
+            isLoading
+                ? Center(child: CircularProgressIndicator())
+                : SafeArea(
+                  child: Container(
+                    color: Colors.white,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Task Information Section
+                          Container(
+                            margin: EdgeInsets.all(20.sp),
+                            padding: EdgeInsets.all(16.sp),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[50],
+                              borderRadius: BorderRadius.circular(12.r),
+                              border: Border.all(color: Colors.grey[200]!),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Task Information',
+                                  style: TextStyle(
+                                    fontSize: 18.sp,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
                                   ),
-                                )
-                              else
-                               // Replace your existing work history ListView.builder section with this updated version:
-
-ListView.builder(
-  shrinkWrap: true,
-  physics: const NeverScrollableScrollPhysics(),
-  itemCount: workDetails.length,
-  itemBuilder: (context, index) {
-    if (index >= workDetails.length) {
-      return Container();
-    }
-    try {
-      final workDetail = workDetails[index] as Map<String, dynamic>;
-
-      // Extract hours spent for this work detail
-      double hoursSpent = 0.0;
-      if (workDetail['hours_spent'] != null) {
-        try {
-          final hours = workDetail['hours_spent'];
-          if (hours is int) {
-            hoursSpent = hours.toDouble();
-          } else if (hours is double) {
-            hoursSpent = hours;
-          } else if (hours is String) {
-            hoursSpent = double.tryParse(hours) ?? 0.0;
-          }
-        } catch (e) {
-          print('Error parsing hours_spent: $e');
-        }
-      }
-
-      // Extract added_by information
-      String addedByUsername = 'Unknown';
-      String userInitial = 'U';
-      if (workDetail['added_by'] is Map) {
-        final addedByMap = workDetail['added_by'] as Map;
-        if (addedByMap.containsKey('username')) {
-          addedByUsername = addedByMap['username']?.toString() ?? 'Unknown';
-          userInitial = addedByUsername.isNotEmpty 
-              ? addedByUsername[0].toUpperCase() 
-              : 'U';
-        }
-      }
-
-      // Generate a color for the avatar based on username
-      Color avatarColor = _generateAvatarColor(addedByUsername);
-
-      return Container(
-        margin: EdgeInsets.only(bottom: 16.h),
-        padding: EdgeInsets.all(16.w),
-        decoration: BoxDecoration(
-          color: Colors.grey[50],
-          borderRadius: BorderRadius.circular(12.r),
-          border: Border.all(
-            color: Colors.grey[200]!,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header with user info, date and hours
-            Row(
-              children: [
-                // User Avatar
-                CircleAvatar(
-                  radius: 18.r,
-                  backgroundColor: avatarColor,
-                  child: Text(
-                    userInitial,
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                SizedBox(width: 8.w),
-                // Username
-                Text(
-                  addedByUsername,
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                ),
-                Spacer(),
-                // Hours spent
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 8.w,
-                    vertical: 4.h,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.blue[100],
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.access_time,
-                        size: 14.sp,
-                        color: Colors.blue[800],
-                      ),
-                      SizedBox(width: 4.w),
-                      Text(
-                        '${hoursSpent.toStringAsFixed(1)} hrs',
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          color: Colors.blue[800],
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 8.h),
-
-            // Date and time
-            if (workDetail['date'] != null)
-              Text(
-                formatDateTime(workDetail['date'].toString()),
-                style: TextStyle(
-                  fontSize: 12.sp,
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            SizedBox(height: 8.h),
-
-            // Caption (if available)
-            if (workDetail['caption'] != null && 
-                workDetail['caption'].toString().isNotEmpty)
-              Container(
-                margin: EdgeInsets.only(bottom: 8.h),
-                padding: EdgeInsets.all(8.w),
-                decoration: BoxDecoration(
-                  color: Colors.amber[50],
-                  borderRadius: BorderRadius.circular(8.r),
-                  border: Border.all(color: Colors.amber[200]!),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.chat_bubble_outline,
-                      size: 16.sp,
-                      color: Colors.amber[700],
-                    ),
-                    SizedBox(width: 8.w),
-                    Expanded(
-                      child: Text(
-                        workDetail['caption'].toString(),
-                        style: TextStyle(
-                          fontSize: 13.sp,
-                          color: Colors.amber[800],
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-            // Description
-            if (workDetail['description'] != null &&
-                workDetail['description'].toString().isNotEmpty)
-              SelectableText(
-                workDetail['description'].toString(),
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  color: Colors.black87,
-                ),
-              ),
-
-            // Attachments with download functionality
-            _buildAttachmentsSection(
-              workDetail['attachments'] ?? workDetail['files'],
-            ),
-          ],
-        ),
-      );
-    } catch (e) {
-      return Container();
-    }
-  },
-)
-
-
-                            ],
+                                ),
+                                SizedBox(height: 16.h),
+                                _buildInfoRow('Task:', taskName),
+                                _buildInfoRow('Description:', description),
+                                _buildInfoRow('Start Date:', startDate),
+                                _buildInfoRow('End Date:', endDate),
+                                _buildInfoRow('Created By:', createdBy),
+                                _buildInfoRow('Assigned To:', assignedTo),
+                                _buildInfoRow('Last Updated:', updatedAt),
+                                // Add total hours spent
+                                _buildInfoRow(
+                                  'Total Hours Spent:',
+                                  '${totalHours.toStringAsFixed(1)} hrs',
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+
+                          // Work History Section
+                          Padding(
+                            padding: EdgeInsets.all(20.sp),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Work History',
+                                  style: TextStyle(
+                                    fontSize: 18.sp,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(height: 12.h),
+                                if (workDetails.isEmpty)
+                                  Center(
+                                    child: Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: 30.h,
+                                      ),
+                                      child: Column(
+                                        children: [
+                                          Icon(
+                                            Icons.history_outlined,
+                                            size: 48.sp,
+                                            color: Colors.grey[400],
+                                          ),
+                                          SizedBox(height: 16.h),
+                                          Text(
+                                            'No work history available',
+                                            style: TextStyle(
+                                              fontSize: 16.sp,
+                                              color: Colors.grey[600],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  // Replace your existing work history ListView.builder section with this updated version:
+                                  ListView.builder(
+                                    shrinkWrap: true,
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    itemCount: workDetails.length,
+                                    itemBuilder: (context, index) {
+                                      if (index >= workDetails.length) {
+                                        return Container();
+                                      }
+                                      try {
+                                        final workDetail =
+                                            workDetails[index]
+                                                as Map<String, dynamic>;
+
+                                        // Extract hours spent for this work detail
+                                        double hoursSpent = 0.0;
+                                        if (workDetail['hours_spent'] != null) {
+                                          try {
+                                            final hours =
+                                                workDetail['hours_spent'];
+                                            if (hours is int) {
+                                              hoursSpent = hours.toDouble();
+                                            } else if (hours is double) {
+                                              hoursSpent = hours;
+                                            } else if (hours is String) {
+                                              hoursSpent =
+                                                  double.tryParse(hours) ?? 0.0;
+                                            }
+                                          } catch (e) {
+                                            print(
+                                              'Error parsing hours_spent: $e',
+                                            );
+                                          }
+                                        }
+
+                                        // Extract added_by information
+                                        String addedByUsername = 'Unknown';
+                                        String userInitial = 'U';
+                                        if (workDetail['added_by'] is Map) {
+                                          final addedByMap =
+                                              workDetail['added_by'] as Map;
+                                          if (addedByMap.containsKey(
+                                            'username',
+                                          )) {
+                                            addedByUsername =
+                                                addedByMap['username']
+                                                    ?.toString() ??
+                                                'Unknown';
+                                            userInitial =
+                                                addedByUsername.isNotEmpty
+                                                    ? addedByUsername[0]
+                                                        .toUpperCase()
+                                                    : 'U';
+                                          }
+                                        }
+
+                                        // Generate a color for the avatar based on username
+                                        Color avatarColor =
+                                            _generateAvatarColor(
+                                              addedByUsername,
+                                            );
+
+                                        return Container(
+                                          margin: EdgeInsets.only(bottom: 16.h),
+                                          padding: EdgeInsets.all(16.w),
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey[50],
+                                            borderRadius: BorderRadius.circular(
+                                              12.r,
+                                            ),
+                                            border: Border.all(
+                                              color: Colors.grey[200]!,
+                                            ),
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              // Header with user info, date and hours
+                                              Row(
+                                                children: [
+                                                  // User Avatar
+                                                  CircleAvatar(
+                                                    radius: 18.r,
+                                                    backgroundColor:
+                                                        avatarColor,
+                                                    child: Text(
+                                                      userInitial,
+                                                      style: TextStyle(
+                                                        fontSize: 14.sp,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color: Colors.white,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  SizedBox(width: 8.w),
+                                                  // Username
+                                                  Text(
+                                                    addedByUsername,
+                                                    style: TextStyle(
+                                                      fontSize: 14.sp,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color: Colors.black87,
+                                                    ),
+                                                  ),
+                                                  Spacer(),
+                                                  // Hours spent
+                                                  Container(
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                          horizontal: 8.w,
+                                                          vertical: 4.h,
+                                                        ),
+                                                    decoration: BoxDecoration(
+                                                      color: isFirstDateBeforeOrSame(workDetail['date'], _task['end_date']) ? Colors.blue[100] :Colors.red[100],
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            12.r,
+                                                          ),
+                                                    ),
+                                                    child: Row(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      children: [
+                                                        Icon(
+                                                          Icons.access_time,
+                                                          size: 14.sp,
+                                                          color: isFirstDateBeforeOrSame(workDetail['date'], _task['end_date'])
+                                                              ? AppColors.inProgressColor
+                                                              : AppColors.delayedColor,
+                                                        ),
+                                                        SizedBox(width: 4.w),
+                                                        Text(
+                                                          '${hoursSpent.toStringAsFixed(1)} hrs',
+                                                          style: TextStyle(
+                                                            fontSize: 12.sp,
+                                                            color: isFirstDateBeforeOrSame(workDetail['date'], _task['end_date'])
+                                                              ? AppColors.inProgressColor
+                                                              : AppColors.delayedColor,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              SizedBox(height: 8.h),
+
+                                              // Date and time
+                                              if (workDetail['date'] != null)
+                                                Text(
+                                                  formatDateTime(
+                                                    workDetail['date']
+                                                        .toString(),
+                                                  ),
+                                                  style: TextStyle(
+                                                    fontSize: 12.sp,
+                                                    color: Colors.grey[600],
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                              SizedBox(height: 8.h),
+
+                                              // Caption (if available)
+                                              if (workDetail['caption'] !=
+                                                      null &&
+                                                  workDetail['caption']
+                                                      .toString()
+                                                      .isNotEmpty)
+                                                Container(
+                                                  margin: EdgeInsets.only(
+                                                    bottom: 8.h,
+                                                  ),
+                                                  padding: EdgeInsets.all(8.w),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.amber[50],
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          8.r,
+                                                        ),
+                                                    border: Border.all(
+                                                      color: Colors.amber[200]!,
+                                                    ),
+                                                  ),
+                                                  child: Row(
+                                                    children: [
+                                                      Icon(
+                                                        Icons
+                                                            .chat_bubble_outline,
+                                                        size: 16.sp,
+                                                        color:
+                                                            Colors.amber[700],
+                                                      ),
+                                                      SizedBox(width: 8.w),
+                                                      Expanded(
+                                                        child: Text(
+                                                          workDetail['caption']
+                                                              .toString(),
+                                                          style: TextStyle(
+                                                            fontSize: 13.sp,
+                                                            color:
+                                                                Colors
+                                                                    .amber[800],
+                                                            fontStyle:
+                                                                FontStyle
+                                                                    .italic,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+
+                                              // Description
+                                              if (workDetail['description'] !=
+                                                      null &&
+                                                  workDetail['description']
+                                                      .toString()
+                                                      .isNotEmpty)
+                                                SelectableText(
+                                                  workDetail['description']
+                                                      .toString(),
+                                                  style: TextStyle(
+                                                    fontSize: 14.sp,
+                                                    color: Colors.black87,
+                                                  ),
+                                                ),
+
+                                              // Attachments with download functionality
+                                              _buildAttachmentsSection(
+                                                workDetail['attachments'] ??
+                                                    workDetail['files'],
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      } catch (e) {
+                                        return Container();
+                                      }
+                                    },
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
         floatingActionButton: FloatingActionButton(
           onPressed: _navigateToUpdateScreen,
           backgroundColor: Colors.black,

@@ -12,19 +12,13 @@ class EmployeeProjects extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.white, 
-      child: _buildTasksGridView(),
-    );
+    return Container(color: Colors.white, child: _buildTasksGridView());
   }
 
   Widget _buildTasksGridView() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildHeader(),
-        _buildContent(),
-      ],
+      children: [_buildHeader(), _buildContent()],
     );
   }
 
@@ -66,11 +60,7 @@ class EmployeeProjects extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: Colors.white.withOpacity(0.2)),
       ),
-      child: Icon(
-        Icons.assignment,
-        color: Colors.white,
-        size: 24.sp,
-      ),
+      child: Icon(Icons.assignment, color: Colors.white, size: 24.sp),
     );
   }
 
@@ -88,14 +78,16 @@ class EmployeeProjects extends StatelessWidget {
           ),
         ),
         SizedBox(height: 6.h),
-        Obx(() => Text(
-          _getTaskCountText(),
-          style: TextStyle(
-            fontSize: 14.sp,
-            color: Colors.grey[300],
-            fontWeight: FontWeight.w500,
+        Obx(
+          () => Text(
+            _getTaskCountText(),
+            style: TextStyle(
+              fontSize: 14.sp,
+              color: Colors.grey[300],
+              fontWeight: FontWeight.w500,
+            ),
           ),
-        )),
+        ),
       ],
     );
   }
@@ -107,19 +99,24 @@ class EmployeeProjects extends StatelessWidget {
   //   return '$count Tasks Assigned';
   // }
   String _getTaskCountText() {
-  final count = controller.filteredTasks.length; // Change from tasks to filteredTasks
-  final tabName = controller.selectedTabIndex.value == 0 ? 'Created' : 'Assigned';
-  
-  if (count == 0) return 'No $tabName tasks';
-  if (count == 1) return '1 $tabName Task';
-  return '$count $tabName Tasks';
-}
+    final count =
+        controller.filteredTasks.length; // Change from tasks to filteredTasks
+    final tabName =
+        controller.selectedTabIndex.value == 0 ? 'Created' : 'Assigned';
+
+    if (count == 0) return 'No $tabName tasks';
+    if (count == 1) return '1 $tabName Task';
+    return '$count $tabName Tasks';
+  }
 
   Widget _buildRefreshButton() {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.white.withOpacity(0.2), Colors.white.withOpacity(0.1)],
+          colors: [
+            Colors.white.withOpacity(0.2),
+            Colors.white.withOpacity(0.1),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -163,98 +160,105 @@ class EmployeeProjects extends StatelessWidget {
   //   );
   // }
   Widget _buildContent() {
-  return Expanded(
-    child: Container(
-      color: Colors.grey[50],
-      child: Column(
-        children: [
-          _buildTabBar(), // Add this
-          Expanded(
-            child: Obx(() => _buildContentBasedOnState()),
+    return Expanded(
+      child: Container(
+        color: Colors.grey[50],
+        child: Column(
+          children: [
+            _buildTabBar(), // Add this
+            Expanded(child: Obx(() => _buildContentBasedOnState())),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTabBar() {
+    return Container(
+      margin: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-    ),
-  );
-}
-Widget _buildTabBar() {
-  return Container(
-    margin: EdgeInsets.all(16.w),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.grey.withOpacity(0.1),
-          blurRadius: 8,
-          offset: const Offset(0, 2),
-        ),
-      ],
-    ),
-    child: Obx(() => Row(
-      children: [
-        Expanded(
-          child: _buildTabItem(
-            'Created',
-            0,
-            Icons.create_outlined,
-            controller.selectedTabIndex.value == 0,
-          ),
-        ),
-        Expanded(
-          child: _buildTabItem(
-            'Assigned',
-            1,
-            Icons.assignment_outlined,
-            controller.selectedTabIndex.value == 1,
-          ),
-        ),
-      ],
-    )),
-  );
-}
-
-Widget _buildTabItem(String title, int index, IconData icon, bool isSelected) {
-  return Material(
-    color: Colors.transparent,
-    child: InkWell(
-      onTap: () => controller.switchTab(index),
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 12.w),
-        decoration: BoxDecoration(
-          gradient: isSelected
-              ? LinearGradient(
-                  colors: [Colors.grey[800]!, Colors.grey[700]!],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                )
-              : null,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+      child: Obx(
+        () => Row(
           children: [
-            Icon(
-              icon,
-              size: 18.sp,
-              color: isSelected ? Colors.white : Colors.grey[600],
+            Expanded(
+              child: _buildTabItem(
+                'Created',
+                0,
+                Icons.create_outlined,
+                controller.selectedTabIndex.value == 0,
+              ),
             ),
-            SizedBox(width: 8.w),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : Colors.grey[600],
+            Expanded(
+              child: _buildTabItem(
+                'Assigned',
+                1,
+                Icons.assignment_outlined,
+                controller.selectedTabIndex.value == 1,
               ),
             ),
           ],
         ),
       ),
-    ),
-  );
-}
+    );
+  }
+
+  Widget _buildTabItem(
+    String title,
+    int index,
+    IconData icon,
+    bool isSelected,
+  ) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => controller.switchTab(index),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 12.w),
+          decoration: BoxDecoration(
+            gradient:
+                isSelected
+                    ? LinearGradient(
+                      colors: [Colors.grey[800]!, Colors.grey[700]!],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
+                    : null,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 18.sp,
+                color: isSelected ? Colors.white : Colors.grey[600],
+              ),
+              SizedBox(width: 8.w),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? Colors.white : Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   // Widget _buildContentBasedOnState() {
   //   if (controller.isLoading.value) {
@@ -272,30 +276,28 @@ Widget _buildTabItem(String title, int index, IconData icon, bool isSelected) {
   //   return _buildTaskGrid();
   // }
   Widget _buildContentBasedOnState() {
-  if (controller.isLoading.value) {
-    return _buildLoadingState();
-  }
+    if (controller.isLoading.value) {
+      return _buildLoadingState();
+    }
 
-  if (controller.errorMessage.value.isNotEmpty) {
-    return _buildErrorState();
-  }
+    if (controller.errorMessage.value.isNotEmpty) {
+      return _buildErrorState();
+    }
 
-  if (controller.filteredTasks.isEmpty) { // Change from tasks to filteredTasks
-    return _buildEmptyState();
-  }
+    if (controller.filteredTasks.isEmpty) {
+      // Change from tasks to filteredTasks
+      return _buildEmptyState();
+    }
 
-  return _buildTaskGrid();
-}
+    return _buildTaskGrid();
+  }
 
   Widget _buildLoadingState() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(
-            color: Colors.grey[800],
-            strokeWidth: 3,
-          ),
+          CircularProgressIndicator(color: Colors.grey[800], strokeWidth: 3),
           SizedBox(height: 16.h),
           Text(
             'Loading your tasks...',
@@ -341,10 +343,7 @@ Widget _buildTabItem(String title, int index, IconData icon, bool isSelected) {
             SizedBox(height: 8.h),
             Text(
               controller.errorMessage.value,
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 16.sp,
-              ),
+              style: TextStyle(color: Colors.grey[600], fontSize: 16.sp),
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 24.h),
@@ -396,10 +395,7 @@ Widget _buildTabItem(String title, int index, IconData icon, bool isSelected) {
           SizedBox(height: 8.h),
           Text(
             'No tasks assigned to you at the moment',
-            style: TextStyle(
-              color: Colors.grey[500],
-              fontSize: 16.sp,
-            ),
+            style: TextStyle(color: Colors.grey[500], fontSize: 16.sp),
           ),
         ],
       ),
@@ -422,28 +418,28 @@ Widget _buildTabItem(String title, int index, IconData icon, bool isSelected) {
   //   );
   // }
   Widget _buildTaskGrid() {
-  return RefreshIndicator(
-    onRefresh: () async => controller.fetchTasks(),
-    color: Colors.grey[800],
-    backgroundColor: Colors.white,
-    child: Padding(
-      padding: EdgeInsets.all(16.w),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return _buildResponsiveGrid(constraints);
-        },
+    return RefreshIndicator(
+      onRefresh: () async => controller.fetchTasks(),
+      color: Colors.grey[800],
+      backgroundColor: Colors.white,
+      child: Padding(
+        padding: EdgeInsets.all(16.w),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return _buildResponsiveGrid(constraints);
+          },
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildResponsiveGrid(BoxConstraints constraints) {
     final isMobile = constraints.maxWidth < 600;
     final isTablet = constraints.maxWidth >= 600 && constraints.maxWidth < 1024;
-    
+
     int crossAxisCount = 1;
     double childAspectRatio = 0.65; // Made taller to accommodate attachments
-    
+
     if (isMobile) {
       crossAxisCount = 1;
       childAspectRatio = 0.65; // Taller cards for mobile
@@ -466,31 +462,27 @@ Widget _buildTabItem(String title, int index, IconData icon, bool isSelected) {
     //   itemCount: controller.tasks.length,
     //   itemBuilder: (context, index) => _buildTaskCard(index, isMobile),
     // );
-     return GridView.builder(
-    physics: const AlwaysScrollableScrollPhysics(),
-    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-      crossAxisCount: crossAxisCount,
-      childAspectRatio: childAspectRatio,
-      crossAxisSpacing: 16.w,
-      mainAxisSpacing: 16.h,
-    ),
-    itemCount: controller.filteredTasks.length, // Change from tasks to filteredTasks
-    itemBuilder: (context, index) => _buildTaskCard(index, isMobile),
-  );
+    return GridView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        childAspectRatio: childAspectRatio,
+        crossAxisSpacing: 16.w,
+        mainAxisSpacing: 16.h,
+      ),
+      itemCount:
+          controller.filteredTasks.length, // Change from tasks to filteredTasks
+      itemBuilder: (context, index) => _buildTaskCard(index, isMobile),
+    );
   }
 
   Widget _buildTaskCard(int index, bool isMobile) {
     if (index >= controller.tasks.length) return const SizedBox.shrink();
 
-   // final task = controller.tasks[index];
-   final task = controller.filteredTasks[index];
-    return _TaskCard(
-      task: task,
-      controller: controller,
-      isMobile: isMobile,
-    );
+    // final task = controller.tasks[index];
+    final task = controller.filteredTasks[index];
+    return _TaskCard(task: task, controller: controller, isMobile: isMobile);
   }
-  
 }
 
 class _TaskCard extends StatelessWidget {
@@ -503,44 +495,44 @@ class _TaskCard extends StatelessWidget {
     required this.controller,
     required this.isMobile,
   });
-Widget _buildEmptyState() {
-  final tabName = controller.selectedTabIndex.value == 0 ? 'created by you' : 'assigned to you';
-  
-  return Center(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // ... existing container and icon ...
-        Text(
-          'No tasks found!',
-          style: TextStyle(
-            fontSize: 24.sp,
-            fontWeight: FontWeight.bold,
-            color: Colors.grey[700],
+  Widget _buildEmptyState() {
+    final String endateJson;
+    final tabName =
+        controller.selectedTabIndex.value == 0
+            ? 'created by you'
+            : 'assigned to you';
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // ... existing container and icon ...
+          Text(
+            'No tasks found!',
+            style: TextStyle(
+              fontSize: 24.sp,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[700],
+            ),
           ),
-        ),
-        SizedBox(height: 8.h),
-        Text(
-          'No tasks $tabName at the moment',
-          style: TextStyle(
-            color: Colors.grey[500],
-            fontSize: 16.sp,
+          SizedBox(height: 8.h),
+          Text(
+            'No tasks $tabName at the moment',
+            style: TextStyle(color: Colors.grey[500], fontSize: 16.sp),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final taskInfo = _extractTaskInfo();
-    
+
     return Card(
       elevation: 8,
       shadowColor: Colors.black.withOpacity(0.2),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: () => _onTaskTap(),
         borderRadius: BorderRadius.circular(16),
@@ -582,12 +574,14 @@ Widget _buildEmptyState() {
     );
   }
 
-  List<Map<String, dynamic>> _extractAttachments(Map<String, dynamic>? workDetail) {
+  List<Map<String, dynamic>> _extractAttachments(
+    Map<String, dynamic>? workDetail,
+  ) {
     if (workDetail == null) return [];
-    
+
     final files = workDetail['files'] as List<dynamic>?;
     if (files == null || files.isEmpty) return [];
-    
+
     return files.map((file) => file as Map<String, dynamic>).toList();
   }
 
@@ -631,11 +625,7 @@ Widget _buildEmptyState() {
             color: Colors.white.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            Icons.folder_outlined,
-            color: Colors.white,
-            size: 16.sp,
-          ),
+          child: Icon(Icons.folder_outlined, color: Colors.white, size: 16.sp),
         ),
         SizedBox(width: 12.w),
         Expanded(
@@ -693,7 +683,12 @@ Widget _buildEmptyState() {
     );
   }
 
-  Widget _buildUserChip(String label, String username, IconData icon, Color color) {
+  Widget _buildUserChip(
+    String label,
+    String username,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
       decoration: BoxDecoration(
@@ -749,15 +744,16 @@ Widget _buildEmptyState() {
           ),
         ],
       ),
-      child: taskInfo.latestWorkDetail != null
-          ? _buildWorkDetailContent(taskInfo)
-          : _buildNoWorkDetailContent(),
+      child:
+          taskInfo.latestWorkDetail != null
+              ? _buildWorkDetailContent(taskInfo)
+              : _buildNoWorkDetailContent(),
     );
   }
 
   Widget _buildWorkDetailContent(_TaskInfo taskInfo) {
     final workDetail = taskInfo.latestWorkDetail!;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -772,7 +768,8 @@ Widget _buildEmptyState() {
                 color: Colors.grey[800],
               ),
             ),
-            if (workDetail['hours_spent'] != null) _buildHoursBadge(workDetail),
+            if (workDetail['hours_spent'] != null)
+              _buildHoursBadge(workDetail, taskInfo),
           ],
         ),
         SizedBox(height: 8.h),
@@ -794,17 +791,34 @@ Widget _buildEmptyState() {
     );
   }
 
-  Widget _buildHoursBadge(Map<String, dynamic> workDetail) {
+  /////////////////////////////////////////////////////////////////////////////////////
+  bool isFirstDateBeforeOrSame(String date1, String date2) {
+    // Convert string to DateTime
+    DateTime d1 = DateTime.parse(date1);
+    DateTime d2 = DateTime.parse(date2);
+
+    // Check if d1 is before or equal to d2
+    return d1.isBefore(d2) || d1.isAtSameMomentAs(d2);
+  }
+
+  /////////////////////////////////////////////////////////////////////////////////////
+  Widget _buildHoursBadge(Map<String, dynamic> workDetail, _TaskInfo taskInfo) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.blue[400]!, Colors.blue[600]!],
+          colors:
+              isFirstDateBeforeOrSame(workDetail['date'], task['end_date'])
+                  ? [Colors.blue[400]!, Colors.blue[600]!]
+                  : [Colors.red[400]!, Colors.red[600]!],
         ),
         borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
+            color:
+                isFirstDateBeforeOrSame(workDetail['date'], task['end_date'])
+                    ? Colors.blue.withOpacity(0.3)
+                    : Colors.red.withOpacity(0.3),
             blurRadius: 3,
             offset: const Offset(0, 1),
           ),
@@ -821,7 +835,10 @@ Widget _buildEmptyState() {
     );
   }
 
-  Widget _buildWorkDetailFooter(_TaskInfo taskInfo, Map<String, dynamic> workDetail) {
+  Widget _buildWorkDetailFooter(
+    _TaskInfo taskInfo,
+    Map<String, dynamic> workDetail,
+  ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -913,7 +930,9 @@ Widget _buildEmptyState() {
             ],
           ),
           SizedBox(height: 8.h),
-          ...taskInfo.attachments.map((attachment) => _buildAttachmentItem(attachment)),
+          ...taskInfo.attachments.map(
+            (attachment) => _buildAttachmentItem(attachment),
+          ),
         ],
       ),
     );
@@ -922,7 +941,7 @@ Widget _buildEmptyState() {
   Widget _buildAttachmentItem(Map<String, dynamic> attachment) {
     final filename = attachment['filename'] ?? 'Unknown file';
     final fileType = attachment['type'] ?? 'unknown';
-    
+
     return Padding(
       padding: EdgeInsets.only(bottom: 4.h),
       child: Row(
@@ -949,7 +968,7 @@ Widget _buildEmptyState() {
   Widget _buildFileTypeIcon(String fileType) {
     IconData iconData;
     Color iconColor;
-    
+
     switch (fileType.toLowerCase()) {
       case 'image':
         iconData = Icons.image_outlined;
@@ -973,18 +992,14 @@ Widget _buildEmptyState() {
         iconData = Icons.insert_drive_file_outlined;
         iconColor = Colors.grey[600]!;
     }
-    
+
     return Container(
       padding: EdgeInsets.all(4.w),
       decoration: BoxDecoration(
         color: iconColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(4),
       ),
-      child: Icon(
-        iconData,
-        size: 12.sp,
-        color: iconColor,
-      ),
+      child: Icon(iconData, size: 12.sp, color: iconColor),
     );
   }
 
@@ -1012,7 +1027,12 @@ Widget _buildEmptyState() {
     );
   }
 
-  Widget _buildDateColumn(String label, String date, IconData icon, Color color) {
+  Widget _buildDateColumn(
+    String label,
+    String date,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: EdgeInsets.all(8.w),
       decoration: BoxDecoration(
@@ -1062,11 +1082,7 @@ Widget _buildEmptyState() {
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.update_rounded,
-            size: 12.sp,
-            color: Colors.grey[400],
-          ),
+          Icon(Icons.update_rounded, size: 12.sp, color: Colors.grey[400]),
           SizedBox(width: 6.w),
           Text(
             'Updated: ${taskInfo.updatedAt}',
