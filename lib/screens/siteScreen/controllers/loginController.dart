@@ -66,6 +66,8 @@ class LoginController extends GetxController {
       "password": passwordController.text,
     };
 
+    debugPrint('${dotenv.env['BASE_URL']}/api/login');
+
     try {
       var response = await dio.post(
         '${dotenv.env['BASE_URL']}/api/login',

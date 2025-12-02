@@ -84,67 +84,85 @@ class TaskWidget extends StatelessWidget {
                                 gradient: LinearGradient(
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
-                                  colors: [Colors.grey[900]!, Colors.grey[800]!],
+                                  colors: [
+                                    Colors.grey[900]!,
+                                    Colors.grey[800]!,
+                                  ],
                                 ),
                               ),
-                              child: Column(
+                              child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Header with project info title
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        'Project Information',
-                                        style: TextStyle(
-                                          fontSize: 20.sp,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        width: 80.w,
-                                      ), // Space for status container
-                                    ],
-                                  ),
-
-                                  SizedBox(height: 16.h),
-
-                                  // Description
-                                  Container(
-                                    width: double.infinity,
-                                    padding: EdgeInsets.all(12.w),
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey[800],
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: Colors.grey[600]!),
-                                    ),
+                                  // Left section (content)
+                                  Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
-                                        Text(
-                                          'DESCRIPTION',
-                                          style: TextStyle(
-                                            fontSize: 12.sp,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.blue[300],
-                                            letterSpacing: 1.2,
-                                          ),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              'Project Information',
+                                              style: TextStyle(
+                                                fontSize: 20.sp,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                            SizedBox(width: 80.w),
+                                          ],
                                         ),
-                                        SizedBox(height: 8.h),
-                                        SelectableText(
-                                          project.description.isNotEmpty
-                                              ? project.description
-                                              : 'No description available',
-                                          style: TextStyle(
-                                            fontSize: 14.sp,
-                                            color: Colors.white,
-                                            height: 1.3,
+
+                                        SizedBox(height: 16.h),
+
+                                        // Description container (auto width)
+                                        Container(
+                                          width: double.infinity,
+                                          padding: EdgeInsets.all(12.w),
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey[800],
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            border: Border.all(
+                                              color: Colors.grey[600]!,
+                                            ),
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                'DESCRIPTION',
+                                                style: TextStyle(
+                                                  fontSize: 12.sp,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.blue[300],
+                                                  letterSpacing: 1.2,
+                                                ),
+                                              ),
+                                              SizedBox(height: 8.h),
+                                              SelectableText(
+                                                project.description.isNotEmpty
+                                                    ? project.description
+                                                    : 'No description available',
+                                                style: TextStyle(
+                                                  fontSize: 14.sp,
+                                                  color: Colors.white,
+                                                  height: 1.3,
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
+
+                                  // Space to prevent overlap with status bar
+                                  SizedBox(width: 60.w),
                                 ],
                               ),
                             ),
@@ -167,7 +185,10 @@ class TaskWidget extends StatelessWidget {
                                   quarterTurns: 3,
                                   child: Center(
                                     child: Text(
-                                      project.status.toUpperCase().replaceAll('_', ' '),
+                                      project.status.toUpperCase().replaceAll(
+                                        '_',
+                                        ' ',
+                                      ),
                                       style: TextStyle(
                                         fontSize: 11.sp,
                                         fontWeight: FontWeight.bold,
@@ -256,18 +277,23 @@ class TaskWidget extends StatelessWidget {
         child: LayoutBuilder(
           builder: (context, constraints) {
             bool isMobile = constraints.maxWidth < 600;
-            
+
             // Calculate the height needed for the grid
             int crossAxisCount = isMobile ? 1 : 2;
             double childAspectRatio = isMobile ? 2.2 : 2.5;
             int rowCount = (controller.tasks.length / crossAxisCount).ceil();
-            double gridHeight = (rowCount * (constraints.maxWidth / crossAxisCount / childAspectRatio)) + 
-                              ((rowCount - 1) * 12.h); // Adding spacing
+            double gridHeight =
+                (rowCount *
+                    (constraints.maxWidth /
+                        crossAxisCount /
+                        childAspectRatio)) +
+                ((rowCount - 1) * 12.h); // Adding spacing
 
             return Container(
               height: gridHeight,
               child: GridView.builder(
-                physics: NeverScrollableScrollPhysics(), // Disable internal scrolling
+                physics:
+                    NeverScrollableScrollPhysics(), // Disable internal scrolling
                 shrinkWrap: true,
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: crossAxisCount,

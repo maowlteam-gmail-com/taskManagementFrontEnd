@@ -174,65 +174,68 @@ class ProjectCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Header with project name and delete icon
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          project.projectName,
-                          style: TextStyle(
-                            fontSize: 18.sp,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      // Delete icon button
-                      Obx(() => IconButton(
-                        onPressed: controller.isDeleting.value ? null : onDelete,
-                        icon: controller.isDeleting.value
-                          ? SizedBox(
-                              width: 20.w,
-                              height: 20.h,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
-                              ),
-                            )
-                          : Icon(
-                              Icons.delete_outline,
-                              color: Colors.red,
-                              size: 24.sp,
+                  Expanded(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            project.projectName,
+                            style: TextStyle(
+                              fontSize: 18.sp,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
-                        tooltip: 'Delete Project',
-                        constraints: BoxConstraints(
-                          minWidth: 30.w,
-                          minHeight: 30.h,
+                            // maxLines: 2,
+                            // overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                        padding: EdgeInsets.all(4.w),
-                        splashRadius: 20.r,
-                      )),
-                      SizedBox(width: 80.w), // Space for status container
-                    ],
+                        // Delete icon button
+                        Obx(() => IconButton(
+                          onPressed: controller.isDeleting.value ? null : onDelete,
+                          icon: controller.isDeleting.value
+                            ? SizedBox(
+                                width: 20.w,
+                                height: 20.h,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                                ),
+                              )
+                            : Icon(
+                                Icons.delete_outline,
+                                color: Colors.red,
+                                size: 24.sp,
+                              ),
+                          tooltip: 'Delete Project',
+                          constraints: BoxConstraints(
+                            minWidth: 30.w,
+                            minHeight: 30.h,
+                          ),
+                          padding: EdgeInsets.all(4.w),
+                          splashRadius: 20.r,
+                        )),
+                        SizedBox(width: 80.w), // Space for status container
+                      ],
+                    ),
                   ),
                   
                   SizedBox(height: 12.h),
                   
                   // Description
-                  Text(
-                    project.description,
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      color: Colors.grey[300],
-                      height: 1.3,
-                    ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  // Text(
+                  //   project.description,
+                  //   style: TextStyle(
+                  //     fontSize: 14.sp,
+                  //     color: Colors.grey[300],
+                  //     height: 1.3,
+                  //   ),
+                  //   maxLines: 3,
+                  //   overflow: TextOverflow.ellipsis,
+                  // ),
                   
-                  SizedBox(height: 16.h),
+                  // SizedBox(height: 16.h),
                   
                   // Date information
                   Row(
@@ -254,6 +257,7 @@ class ProjectCard extends StatelessWidget {
                           Colors.red,
                         ),
                       ),
+                      SizedBox(width: 60.w),
                     ],
                   ),
                 ],

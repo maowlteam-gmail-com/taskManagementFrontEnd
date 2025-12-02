@@ -1511,7 +1511,12 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
         children: [
           // Main content
           Container(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.only(
+              left: 16,
+              top: 16,
+              bottom: 16,
+              right: 76, // 60 for status bar + little spacing
+            ),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               gradient: LinearGradient(

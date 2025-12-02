@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:intl/intl.dart';
 import 'package:maowl/colors/app_colors.dart';
 import 'package:maowl/screens/adminScreen/controller/projectTaskController.dart';
 import 'package:maowl/screens/adminScreen/model/taskHistoryResponse.dart';
@@ -133,11 +134,14 @@ class TaskHistoryController extends GetxController {
   }
 
   String formatDateTime(String dateTimeString) {
+    if (dateTimeString == null) return 'N/A';
     try {
-      final dt = DateTime.parse(dateTimeString);
-      return '${dt.day}/${dt.month}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-    } catch (_) {
-      return dateTimeString;
+      final date = DateTime.parse(dateTimeString);
+      // Convert UTC to local time
+      final localDate = date.toLocal();
+      return DateFormat('MMM d, yyyy - h:mm a').format(localDate);
+    } catch (e) {
+      return 'Invalid Date';
     }
   }
 
