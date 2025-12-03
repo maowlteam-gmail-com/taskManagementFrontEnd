@@ -204,7 +204,7 @@ class TaskHistoryWidget extends StatelessWidget {
                     Expanded(
                       child: _buildDateColumn(
                         'START DATE',
-                        controller.formatDateTime(task.startDate),
+                        controller.formatDateTimeIST(task.startDate),
                         Icons.calendar_today,
                         Colors.orange,
                       ),
@@ -213,7 +213,7 @@ class TaskHistoryWidget extends StatelessWidget {
                     Expanded(
                       child: _buildDateColumn(
                         'DUE DATE',
-                        controller.formatDateTime(task.endDate),
+                        controller.formatDateTimeIST(task.endDate),
                         Icons.event,
                         Colors.purple,
                       ),

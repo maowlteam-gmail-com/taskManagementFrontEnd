@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:intl/intl.dart';
 import 'package:maowl/screens/employeeScreen/controller/taskUpdateController.dart';
 import 'package:path/path.dart' as path;
@@ -14,6 +15,8 @@ class TaskUpdateScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.put(TaskUpdateController());
     controller.initializeTask(task);
+    final storage = GetStorage();
+    var userId = storage.read("_id");
 
     final taskName = task['task_name'] ?? 'Unnamed Task';
     final today = DateFormat('MMM d, yyyy').format(DateTime.now());
@@ -46,10 +49,16 @@ class TaskUpdateScreen extends StatelessWidget {
                 SizedBox(height: 24.h),
                 _buildActionButtons(controller),
                 SizedBox(height: 20.h),
-                _buildCollaboratorsSection(controller),             
+                _buildCollaboratorsSection(controller),
                 SizedBox(height: 20.h),
-                _buildCompleteTaskButton(controller),
-                SizedBox(height: 20.h),
+                userId == task["created_by"]["_id"]
+                    ? Column(
+                      children: [
+                        _buildCompleteTaskButton(controller),
+                        SizedBox(height: 20.h),
+                      ],
+                    )
+                    : SizedBox.shrink(),
                 _buildErrorDisplay(controller),
               ],
             ),
@@ -441,49 +450,50 @@ class TaskUpdateScreen extends StatelessWidget {
       ],
     );
   }
+
   Widget _buildCompleteTaskButton(TaskUpdateController controller) {
-  return SizedBox(
-    width: double.infinity,
-    height: 50.h,
-    child: Obx(
-      () => ElevatedButton(
-        onPressed: controller.isLoading.value ? null : controller.completeTask,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.green,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8.sp),
+    return SizedBox(
+      width: double.infinity,
+      height: 50.h,
+      child: Obx(
+        () => ElevatedButton(
+          onPressed:
+              controller.isLoading.value ? null : controller.completeTask,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.green,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8.sp),
+            ),
           ),
-        ),
-        child: controller.isLoading.value
-            ? SizedBox(
-                height: 20.h,
-                width: 20.w,
-                child: const CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation(
-                    Colors.white,
-                  ),
-                ),
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.check_circle_outline),
-                  SizedBox(width: 8.w),
-                  Text(
-                    'Mark as Complete',
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w600,
+          child:
+              controller.isLoading.value
+                  ? SizedBox(
+                    height: 20.h,
+                    width: 20.w,
+                    child: const CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation(Colors.white),
                     ),
+                  )
+                  : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.check_circle_outline),
+                      SizedBox(width: 8.w),
+                      Text(
+                        'Mark as Complete',
+                        style: TextStyle(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildErrorDisplay(TaskUpdateController controller) {
     return Obx(

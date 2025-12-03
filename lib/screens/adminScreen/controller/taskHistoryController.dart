@@ -134,12 +134,22 @@ class TaskHistoryController extends GetxController {
   }
 
   String formatDateTime(String dateTimeString) {
-    if (dateTimeString == null) return 'N/A';
+    if (dateTimeString.isEmpty) return 'N/A';
     try {
       final date = DateTime.parse(dateTimeString);
       // Convert UTC to local time
       final localDate = date.toLocal();
       return DateFormat('MMM d, yyyy - h:mm a').format(localDate);
+    } catch (e) {
+      return 'Invalid Date';
+    }
+  }
+
+  String formatDateTimeIST(String dateTimeString) {
+    if (dateTimeString.isEmpty) return 'N/A';
+    try {
+      final date = DateTime.parse(dateTimeString);
+      return DateFormat('MMM d, yyyy - h:mm a').format(date);
     } catch (e) {
       return 'Invalid Date';
     }
