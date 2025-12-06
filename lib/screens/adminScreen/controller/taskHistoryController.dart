@@ -164,6 +164,54 @@ class TaskHistoryController extends GetxController {
     return d1.isBefore(d2) || d1.isAtSameMomentAs(d2);
   }
 
+  Color getDateStatusColor(String date1, String date2) {
+    try {
+      DateTime d1 = DateTime.parse(date1).toLocal();
+      DateTime d2 = DateTime.parse(date2).toLocal();
+
+      // Difference in days (d2 - d1)
+      int diff = d2.difference(d1).inDays;
+
+      if (diff >= 0 && diff <= 2) {
+        // d1 is same day or within 2 days before d2
+        return AppColors.dueColor;
+      } else if (diff > 2) {
+        // d1 is further in the past than 2 days before d2
+        return AppColors.inProgressColor;
+      } else {
+        // diff < 0 → d1 is after d2
+        return AppColors.delayedColor;
+      }
+    } catch (e) {
+      print("Error comparing dates: $e");
+      return AppColors.inProgressColor; // fallback
+    }
+  }
+
+  Color getDateStatusColorLight(String date1, String date2) {
+    try {
+      DateTime d1 = DateTime.parse(date1).toLocal();
+      DateTime d2 = DateTime.parse(date2).toLocal();
+
+      // Difference in days (d2 - d1)
+      int diff = d2.difference(d1).inDays;
+
+      if (diff >= 0 && diff <= 2) {
+        // d1 is same day or within 2 days before d2
+        return const Color.fromARGB(255, 255, 244, 203);
+      } else if (diff > 2) {
+        // d1 is further in the past than 2 days before d2
+        return const Color.fromARGB(255, 225, 231, 255);
+      } else {
+        // diff < 0 → d1 is after d2
+        return const Color.fromARGB(255, 255, 211, 211);
+      }
+    } catch (e) {
+      print("Error comparing dates: $e");
+      return const Color.fromARGB(255, 225, 231, 255); // fallback
+    }
+  }
+
   Color getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'pending':

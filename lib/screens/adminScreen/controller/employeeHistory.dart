@@ -5,12 +5,16 @@ import 'package:get_storage/get_storage.dart';
 import 'package:dio/dio.dart';
 import 'package:intl/intl.dart';
 
-import 'package:maowl/util/dio_config.dart'; 
+import 'package:maowl/util/dio_config.dart';
+
 class EmployeeHistoryController extends GetxController {
-  final RxList<Map<String, dynamic>> employeeHistory = <Map<String, dynamic>>[].obs;
+  final RxList<Map<String, dynamic>> employeeHistory =
+      <Map<String, dynamic>>[].obs;
   final RxBool isLoading = false.obs;
   final RxString errorMessage = "".obs;
-  final Rx<Map<String, dynamic>?> selectedEmployee = Rx<Map<String, dynamic>?>(null);
+  final Rx<Map<String, dynamic>?> selectedEmployee = Rx<Map<String, dynamic>?>(
+    null,
+  );
 
   final Dio _dio = DioConfig.getDio();
   final box = GetStorage();
@@ -47,12 +51,12 @@ class EmployeeHistoryController extends GetxController {
       if (response.statusCode == 200) {
         final responseBody = response.data as Map<String, dynamic>;
 
-        if (responseBody['success'] == true && responseBody.containsKey('data')) {
+        if (responseBody['success'] == true &&
+            responseBody.containsKey('data')) {
           final dataList = responseBody['data'] as List;
 
-          final historyItems = dataList
-              .map((e) => e as Map<String, dynamic>)
-              .toList();
+          final historyItems =
+              dataList.map((e) => e as Map<String, dynamic>).toList();
 
           historyItems.sort((a, b) {
             try {
@@ -67,13 +71,16 @@ class EmployeeHistoryController extends GetxController {
 
           employeeHistory.value = historyItems;
         } else {
-          errorMessage.value = responseBody['message'] ?? "Failed to fetch employee history";
+          errorMessage.value =
+              responseBody['message'] ?? "Failed to fetch employee history";
         }
       } else {
-        errorMessage.value = "Failed to load employee history: ${response.statusCode}";
+        errorMessage.value =
+            "Failed to load employee history: ${response.statusCode}";
       }
     } on DioException catch (e) {
-      errorMessage.value = e.response?.data.toString() ?? e.message ?? 'Unknown error';
+      errorMessage.value =
+          e.response?.data.toString() ?? e.message ?? 'Unknown error';
       print('Dio error: ${e.message}');
     } catch (e) {
       errorMessage.value = "Error fetching employee history: $e";
@@ -85,7 +92,8 @@ class EmployeeHistoryController extends GetxController {
 
   String formatDate(String dateString) {
     try {
-      final date = DateTime.parse(dateString);
+      final date =
+          DateTime.parse(dateString).toLocal(); // convert to local time
       final now = DateTime.now();
       final difference = now.difference(date);
 
@@ -114,7 +122,7 @@ class EmployeeHistoryController extends GetxController {
 
   String getExactDate(String dateString) {
     try {
-      final date = DateTime.parse(dateString);
+      final date = DateTime.parse(dateString).toLocal();
       final formatter = DateFormat('dd MMM yyyy, hh:mm a');
       return formatter.format(date);
     } catch (e) {
@@ -125,7 +133,7 @@ class EmployeeHistoryController extends GetxController {
 
   String getDateOnly(String dateString) {
     try {
-      final date = DateTime.parse(dateString);
+      final date = DateTime.parse(dateString).toLocal();
       final formatter = DateFormat('dd MMM yyyy');
       return formatter.format(date);
     } catch (e) {
@@ -136,7 +144,7 @@ class EmployeeHistoryController extends GetxController {
 
   String getTimeOnly(String dateString) {
     try {
-      final date = DateTime.parse(dateString);
+      final date = DateTime.parse(dateString).toLocal();
       final formatter = DateFormat('hh:mm a');
       return formatter.format(date);
     } catch (e) {

@@ -56,6 +56,54 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
     return d1.isBefore(d2) || d1.isAtSameMomentAs(d2);
   }
 
+  Color getDateStatusColor(String date1, String date2) {
+    try {
+      DateTime d1 = DateTime.parse(date1).toLocal();
+      DateTime d2 = DateTime.parse(date2).toLocal();
+
+      // Difference in days (d2 - d1)
+      int diff = d2.difference(d1).inDays;
+
+      if (diff >= 0 && diff <= 2) {
+        // d1 is same day or within 2 days before d2
+        return AppColors.dueColor;
+      } else if (diff > 2) {
+        // d1 is further in the past than 2 days before d2
+        return AppColors.inProgressColor;
+      } else {
+        // diff < 0 → d1 is after d2
+        return AppColors.delayedColor;
+      }
+    } catch (e) {
+      print("Error comparing dates: $e");
+      return AppColors.inProgressColor; // fallback
+    }
+  }
+
+  Color getDateStatusColorLight(String date1, String date2) {
+    try {
+      DateTime d1 = DateTime.parse(date1).toLocal();
+      DateTime d2 = DateTime.parse(date2).toLocal();
+
+      // Difference in days (d2 - d1)
+      int diff = d2.difference(d1).inDays;
+
+      if (diff >= 0 && diff <= 2) {
+        // d1 is same day or within 2 days before d2
+        return const Color.fromARGB(255, 255, 244, 203);
+      } else if (diff > 2) {
+        // d1 is further in the past than 2 days before d2
+        return const Color.fromARGB(255, 225, 231, 255);
+      } else {
+        // diff < 0 → d1 is after d2
+        return const Color.fromARGB(255, 255, 211, 211);
+      }
+    } catch (e) {
+      print("Error comparing dates: $e");
+      return const Color.fromARGB(255, 225, 231, 255); // fallback
+    }
+  }
+
   Future<void> fetchTasks() async {
     isLoading.value = true;
     errorMessage.value = '';
@@ -755,27 +803,19 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
                                                                           4.h,
                                                                     ),
                                                                 decoration: BoxDecoration(
-                                                                  color:
-                                                                      isFirstDateBeforeOrSame(
-                                                                            latestWorkDetail['date'],
-                                                                            task['end_date'],
-                                                                          )
-                                                                          ? Colors
-                                                                              .blue[50]
-                                                                          : Colors
-                                                                              .red[50],
+                                                                  color: getDateStatusColorLight(
+                                                                    latestWorkDetail['date'],
+                                                                    task['end_date'],
+                                                                  ),
                                                                   borderRadius:
                                                                       BorderRadius.circular(
                                                                         12,
                                                                       ),
                                                                   border: Border.all(
-                                                                    color:
-                                                                        isFirstDateBeforeOrSame(
-                                                                              latestWorkDetail['date'],
-                                                                              task['end_date'],
-                                                                            )
-                                                                            ? AppColors.inProgressColor
-                                                                            : AppColors.delayedColor,
+                                                                    color: getDateStatusColor(
+                                                                      latestWorkDetail['date'],
+                                                                      task['end_date'],
+                                                                    ),
                                                                   ),
                                                                 ),
                                                                 child: Text(
@@ -786,13 +826,10 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
                                                                     fontWeight:
                                                                         FontWeight
                                                                             .bold,
-                                                                    color:
-                                                                        isFirstDateBeforeOrSame(
-                                                                              latestWorkDetail['date'],
-                                                                              task['end_date'],
-                                                                            )
-                                                                            ? AppColors.inProgressColor
-                                                                            : AppColors.delayedColor,
+                                                                    color: getDateStatusColor(
+                                                                      latestWorkDetail['date'],
+                                                                      task['end_date'],
+                                                                    ),
                                                                   ),
                                                                 ),
                                                               ),
@@ -2015,22 +2052,16 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
                                   vertical: 4.h,
                                 ),
                                 decoration: BoxDecoration(
-                                  color:
-                                      isFirstDateBeforeOrSame(
-                                            item['timestamp'] ?? item['date'],
-                                            endate,
-                                          )
-                                          ? Colors.blue[50]
-                                          : Colors.red[50],
+                                  color: getDateStatusColorLight(
+                                    item['timestamp'] ?? item['date'],
+                                    endate,
+                                  ),
                                   borderRadius: BorderRadius.circular(4.r),
                                   border: Border.all(
-                                    color:
-                                        isFirstDateBeforeOrSame(
-                                              item['timestamp'] ?? item['date'],
-                                              endate,
-                                            )
-                                            ? AppColors.inProgressColor
-                                            : AppColors.delayedColor,
+                                    color: getDateStatusColor(
+                                      item['timestamp'] ?? item['date'],
+                                      endate,
+                                    ),
                                     width: 1,
                                   ),
                                 ),
@@ -2039,13 +2070,10 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
                                   style: TextStyle(
                                     fontSize: 12.sp,
                                     fontWeight: FontWeight.bold,
-                                    color:
-                                        isFirstDateBeforeOrSame(
-                                              item['timestamp'] ?? item['date'],
-                                              endate,
-                                            )
-                                            ? AppColors.inProgressColor
-                                            : AppColors.delayedColor,
+                                    color: getDateStatusColor(
+                                      item['timestamp'] ?? item['date'],
+                                      endate,
+                                    ),
                                   ),
                                 ),
                               ),

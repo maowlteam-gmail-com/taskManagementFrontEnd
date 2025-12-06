@@ -494,17 +494,15 @@ class TaskHistoryWidget extends StatelessWidget {
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                 decoration: BoxDecoration(
-                  color: controller.isFirstDateBeforeOrSame(
+                  color: controller.getDateStatusColorLight(
                               item.timestamp,
                               controller.taskHistory.value!.task.endDate,
-                            ) ? Colors.blue[50] : Colors.red[50],
+                            ),
                   borderRadius: BorderRadius.circular(4.r),
-                  border: Border.all(color: controller.isFirstDateBeforeOrSame(
+                  border: Border.all(color: controller.getDateStatusColor(
                               item.timestamp,
                               controller.taskHistory.value!.task.endDate,
-                            )
-                            ? AppColors.inProgressColor
-                            : AppColors.delayedColor, width: 1),
+                            )),
                 ),
                 child: Text(
                   '$hoursSpent hrs',
@@ -512,12 +510,10 @@ class TaskHistoryWidget extends StatelessWidget {
                     fontSize: 12.sp,
                     fontWeight: FontWeight.bold,
                     color:
-                        controller.isFirstDateBeforeOrSame(
+                        controller.getDateStatusColor(
                               item.timestamp,
                               controller.taskHistory.value!.task.endDate,
-                            )
-                            ? AppColors.inProgressColor
-                            : AppColors.delayedColor,
+                            ),
                   ),
                 ),
               ),
