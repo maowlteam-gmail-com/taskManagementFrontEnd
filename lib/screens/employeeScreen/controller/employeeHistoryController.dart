@@ -8,18 +8,20 @@ import 'dart:async';
 
 import 'package:maowl/util/dio_config.dart';
 
-class EmployeeHistoryController extends GetxController with WidgetsBindingObserver {
-  final RxList<Map<String, dynamic>> employeeHistory = <Map<String, dynamic>>[].obs;
+class EmployeeHistoryController extends GetxController
+    with WidgetsBindingObserver {
+  final RxList<Map<String, dynamic>> employeeHistory =
+      <Map<String, dynamic>>[].obs;
   final RxBool isLoading = false.obs;
   final RxString errorMessage = "".obs;
   final RxString currentEmployeeName = "".obs;
 
   final Dio _dio = DioConfig.getDio();
   final box = GetStorage();
-  
+
   // Timer for periodic refresh
   Timer? _refreshTimer;
-  
+
   // Static method to trigger refresh from other screens
   static void triggerRefresh() {
     try {
@@ -37,10 +39,10 @@ class EmployeeHistoryController extends GetxController with WidgetsBindingObserv
     // Get current employee name from storage if available
     currentEmployeeName.value = box.read('username') ?? 'Employee';
     fetchOwnHistory();
-    
+
     // Start periodic refresh (every 30 seconds)
     _startPeriodicRefresh();
-    
+
     // Add lifecycle observer
     WidgetsBinding.instance.addObserver(this);
   }
@@ -55,7 +57,7 @@ class EmployeeHistoryController extends GetxController with WidgetsBindingObserv
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    
+
     // Refresh when app comes to foreground
     if (state == AppLifecycleState.resumed) {
       Future.delayed(Duration(milliseconds: 500), () {
@@ -104,12 +106,12 @@ class EmployeeHistoryController extends GetxController with WidgetsBindingObserv
       if (response.statusCode == 200) {
         final responseBody = response.data as Map<String, dynamic>;
 
-        if (responseBody['success'] == true && responseBody.containsKey('history')) {
+        if (responseBody['success'] == true &&
+            responseBody.containsKey('history')) {
           final historyList = responseBody['history'] as List;
 
-          final historyItems = historyList
-              .map((e) => e as Map<String, dynamic>)
-              .toList();
+          final historyItems =
+              historyList.map((e) => e as Map<String, dynamic>).toList();
 
           // Sort by date - latest first
           historyItems.sort((a, b) {
@@ -125,13 +127,16 @@ class EmployeeHistoryController extends GetxController with WidgetsBindingObserv
 
           employeeHistory.value = historyItems;
         } else {
-          errorMessage.value = responseBody['message'] ?? "Failed to fetch task history";
+          errorMessage.value =
+              responseBody['message'] ?? "Failed to fetch task history";
         }
       } else {
-        errorMessage.value = "Failed to load task history: ${response.statusCode}";
+        errorMessage.value =
+            "Failed to load task history: ${response.statusCode}";
       }
     } on DioException catch (e) {
-      errorMessage.value = e.response?.data.toString() ?? e.message ?? 'Unknown error';
+      errorMessage.value =
+          e.response?.data.toString() ?? e.message ?? 'Unknown error';
       print('Dio error: ${e.message}');
     } catch (e) {
       errorMessage.value = "Error fetching task history: $e";
@@ -150,11 +155,20 @@ class EmployeeHistoryController extends GetxController with WidgetsBindingObserv
 
   String formatDate(String dateString) {
     try {
-      // Parse UTC date and convert to local
       final utcDate = DateTime.parse(dateString);
       final localDate = utcDate.toLocal();
+
       final now = DateTime.now();
-      final difference = now.difference(localDate);
+
+      // Strip time part (important fix)
+      final today = DateTime(now.year, now.month, now.day);
+      final messageDate = DateTime(
+        localDate.year,
+        localDate.month,
+        localDate.day,
+      );
+
+      final dayDifference = today.difference(messageDate).inDays;
 
       final dateFormatter = DateFormat('dd MMM yyyy');
       final timeFormatter = DateFormat('hh:mm a');
@@ -162,11 +176,11 @@ class EmployeeHistoryController extends GetxController with WidgetsBindingObserv
       final formattedDate = dateFormatter.format(localDate);
       final formattedTime = timeFormatter.format(localDate);
 
-      if (difference.inDays == 0) {
+      if (dayDifference == 0) {
         return 'Today at $formattedTime';
-      } else if (difference.inDays == 1) {
+      } else if (dayDifference == 1) {
         return 'Yesterday at $formattedTime';
-      } else if (difference.inDays < 7) {
+      } else if (dayDifference < 7) {
         final dayFormatter = DateFormat('EEEE');
         final dayName = dayFormatter.format(localDate);
         return '$dayName at $formattedTime';
