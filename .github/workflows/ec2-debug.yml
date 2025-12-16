@@ -1,0 +1,45 @@
+name: EC2 Debug – Print Details & Test SSH
+
+on:
+  workflow_dispatch:   # manual trigger from GitHub UI
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+
+    steps:
+      # ----------------------------------------
+      # 1️⃣ Print AWS & EC2 details (SAFE)
+      # ----------------------------------------
+      - name: Print EC2 & AWS details
+        run: |
+          echo "========== AWS / EC2 DETAILS =========="
+          echo "AWS_REGION  : $AWS_REGION"
+          echo "EC2_HOST    : ${{ secrets.EC2_HOST }}"
+          echo "EC2_USER    : ${{ secrets.EC2_USER }}"
+
+          if [ -n "${{ secrets.EC2_SSH_KEY }}" ]; then
+            echo "EC2_SSH_KEY : PRESENT"
+          else
+            echo "EC2_SSH_KEY : MISSING"
+          fi
+          echo "======================================="
+
+      # ----------------------------------------
+      # 2️⃣ SSH connectivity test (CRITICAL)
+      # ----------------------------------------
+      - name: Test SSH connection to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "SSH LOGIN SUCCESSFUL"
+            echo "User     : $(whoami)"
+            echo "Hostname : $(hostname)"
+            echo "OS Info  :"
+            cat /etc/os-release
