@@ -144,6 +144,6 @@ class LoginController extends GetxController {
     passwordController.clear();
 
     // Redirect to login
-    Get.offAllNamed('/mainsite');
+    Get.offAllNamed('/login');
   }
 }

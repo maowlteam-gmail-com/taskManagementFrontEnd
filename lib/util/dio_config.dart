@@ -41,7 +41,7 @@ class DioConfig {
             );
             
             // Redirect to login
-            Get.offAllNamed('/mainsite');
+            Get.offAllNamed('/login');
           }
           return handler.next(e);
         }

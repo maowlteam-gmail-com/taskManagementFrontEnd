@@ -95,7 +95,7 @@ class Employeecontroller extends GetxController {
         );
 
         Future.delayed(Duration(milliseconds: 500), () {
-          Get.offAllNamed('/mainsite');
+          Get.offAllNamed('/login');
         });
       } else {
         errorMessage.value = "Failed to logout: ${response.statusCode}";

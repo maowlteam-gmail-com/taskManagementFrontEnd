@@ -11,6 +11,7 @@ import 'package:maowl/screens/employeeScreen/controller/employeeController.dart'
 import 'package:maowl/screens/employeeScreen/view/employeeScreen.dart';
 import 'package:maowl/screens/employeeScreen/widgets/taskDetails.dart';
 import 'package:maowl/screens/employeeScreen/widgets/taskUpdateScreen.dart';
+import 'package:maowl/screens/loginPage/login_screen.dart';
 import 'package:maowl/screens/siteScreen/views/siteScreen.dart';
 import 'package:maowl/util/dio_config.dart';
 
@@ -82,6 +83,11 @@ class MyApp extends StatelessWidget {
               transition: Transition.fadeIn,
             ),
             GetPage(
+              name: '/login',
+              page: () => LoginScreen(),
+              transition: Transition.fadeIn,
+            ),
+            GetPage(
               name: '/admin',
               page: () => AdminScreen(),
               binding: BindingsBuilder(() {
@@ -140,6 +146,7 @@ class MyApp extends StatelessWidget {
         return '/employee';
       }
     }
-    return '/mainsite';
+    // return '/mainsite';
+    return '/login';
   }
 }
