@@ -1,12 +1,14 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:maowl/screens/adminScreen/model/taskModel.dart';
-import 'package:maowl/util/dio_config.dart'; 
+import 'package:maowl/util/dio_config.dart';
+
 class ProjectTaskController extends GetxController {
   final Dio _dio = DioConfig.getDio();
-  
+
   final GetStorage _storage = GetStorage();
 
   // State variables
@@ -22,7 +24,6 @@ class ProjectTaskController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-  
   }
 
   Future<void> fetchTasks(String projectId) async {
@@ -35,29 +36,34 @@ class ProjectTaskController extends GetxController {
         throw Exception('Base URL not configured');
       }
 
-      final response = await _dio.get('$baseUrl/api/getTasksForProject/$projectId');
+      final response = await _dio.get(
+        '$baseUrl/api/getTasksForProject/$projectId',
+      );
 
       if (response.statusCode == 200) {
         final data = response.data;
 
         if (data['success'] == true) {
           final List taskList = data['data'] ?? [];
+          debugPrint("Task Count: "+taskList.length.toString());
 
-          tasks.value = taskList.map((taskData) {
-            return TaskModel(
-              id: taskData['_id'] ?? '',
-              taskName: taskData['task_name'] ?? '',
-              status: taskData['status'] ?? '',
-              createdBy: User(
-                id: taskData['created_by']['_id'] ?? '',
-                username: taskData['created_by']['username'] ?? '',
-              ),
-              assignedTo: User(
-                id: taskData['assigned_to']['_id'] ?? '',
-                username: taskData['assigned_to']['username'] ?? '',
-              ),
-            );
-          }).toList();
+          tasks.value =
+              taskList.map((taskData) {
+                return TaskModel(
+                  id: taskData['_id'] ?? '',
+                  taskName: taskData['task_name'] ?? '',
+                  status: taskData['status'] ?? '',
+                  createdBy: User(
+                    id: taskData['created_by']['_id'] ?? '',
+                    username: taskData['created_by']['username'] ?? '',
+                  ),
+                  assignedTo: User(
+                    id: taskData['assigned_to']?['_id'] ?? '',
+                    username: taskData['assigned_to']?['username'] ?? '',
+                  ),
+                );
+              }).toList();
+          debugPrint("Task Count: "+tasks.length.toString());
         } else {
           throw Exception(data['message'] ?? 'Failed to fetch tasks');
         }
@@ -117,10 +123,7 @@ class ProjectTaskController extends GetxController {
   }
 
   Map<String, String> getCurrentProjectInfo() {
-    return {
-      'id': selectedProjectId.value,
-      'name': selectedProjectName.value,
-    };
+    return {'id': selectedProjectId.value, 'name': selectedProjectName.value};
   }
 
   String _handleDioError(DioException e) {

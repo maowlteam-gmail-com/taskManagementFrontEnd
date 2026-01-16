@@ -29,12 +29,15 @@ class EmployeeProjects extends StatefulWidget {
 
 class _EmployeeProjectsState extends State<EmployeeProjects> {
   final RxList<Map<String, dynamic>> tasks = <Map<String, dynamic>>[].obs;
+  final RxList<Map<String, dynamic>> filteredTasks =
+      <Map<String, dynamic>>[].obs;
   final RxBool isLoading = true.obs;
   final RxString errorMessage = ''.obs;
   final Dio _dio = DioConfig.getDio();
   final box = GetStorage();
 
   // Task detail and history state
+  final RxInt selectedTabIndex = 0.obs;
   final RxBool showTaskDetail = false.obs;
   final Rx<Map<String, dynamic>> selectedTask = Rx<Map<String, dynamic>>({});
   final RxList<Map<String, dynamic>> taskHistory = <Map<String, dynamic>>[].obs;
@@ -104,6 +107,129 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
     }
   }
 
+  void switchTab(int index) {
+    selectedTabIndex.value = index;
+    filterTasks();
+  }
+
+  void filterTasks() {
+    final currentUserId = widget.employee['_id'];
+    debugPrint(
+      "🔍 Starting filterTasks - Selected tab: ${selectedTabIndex.value}",
+    );
+    debugPrint("🔍 Total tasks: ${tasks.length}");
+    debugPrint("🔍 Current user ID: '$currentUserId'");
+
+    // Debug: Print all available user IDs in tasks
+    debugPrint("🔍 All user IDs in tasks:");
+    for (var task in tasks) {
+      debugPrint("🔍 Task: ${task['task_name']}");
+      debugPrint(
+        "🔍   Created by: ${task['created_by']?['_id']} (${task['created_by']?['username']})",
+      );
+      debugPrint(
+        "🔍   Assigned to: ${task['assigned_to']?['_id']} (${task['assigned_to']?['username']})",
+      );
+      debugPrint("🔍   Collaborators: ${task['collaborators']}");
+    }
+
+    if (selectedTabIndex.value == 0) {
+      // Show tasks created by current user (including completed tasks)
+      debugPrint("🔍 Filtering for CREATED tasks...");
+      filteredTasks.value =
+          tasks.where((task) {
+            final createdBy = task['created_by'];
+            if (createdBy != null && createdBy['_id'] != null) {
+              final createdById = createdBy['_id'].toString().trim();
+              final currentUserIdTrimmed = currentUserId.toString().trim();
+              final match = createdById == currentUserIdTrimmed;
+              debugPrint(
+                "🔍 Task '${task['task_name']}': Created by '$createdById' == '$currentUserIdTrimmed' = $match",
+              );
+              return match;
+            }
+            return false;
+          }).toList();
+    } else {
+      // Show tasks where user is EITHER assigned OR collaborator (or both) - EXCLUDE completed tasks
+      debugPrint(
+        "🔍 Filtering for ASSIGNED tasks (assignee OR collaborator) - excluding completed tasks...",
+      );
+      filteredTasks.value =
+          tasks.where((task) {
+            final assignedTo = task['assigned_to'];
+            final taskStatus = task['status']?.toString().toLowerCase() ?? '';
+            final lastActiveUser = task['last_active_user'];
+            debugPrint("Task ${task['task_name']} editable by $lastActiveUser");
+
+            // First check if task is completed - if so, exclude it from Assigned tab
+            if (taskStatus == 'completed') {
+              debugPrint(
+                "🔍 Task '${task['task_name']}': Status is completed - excluding from Assigned tab",
+              );
+              return false;
+            }
+
+            // Check if user is the main assignee
+            bool isAssignee = false;
+            if (assignedTo != null && assignedTo['_id'] != null) {
+              final assignedToId = assignedTo['_id'].toString().trim();
+              final currentUserIdTrimmed = currentUserId.toString().trim();
+              isAssignee = assignedToId == currentUserIdTrimmed;
+            }
+
+            // Check if any collaborator exist and if the last editor is user
+            bool match = false;
+            bool isCollaborator = false;
+            if (lastActiveUser != null) {
+              isCollaborator =
+                  lastActiveUser.toString().trim() ==
+                  currentUserId.toString().trim();
+              match = isCollaborator;
+              debugPrint("Collab: $isCollaborator $match");
+            } else {
+              match = isAssignee;
+              debugPrint("Assign: $isAssignee $match");
+            }
+            debugPrint("Match: $match");
+
+            debugPrint("🔍 Task '${task['task_name']}': ");
+            debugPrint("🔍   - Status: $taskStatus");
+            debugPrint("🔍   - Is Assignee: $isAssignee");
+            debugPrint("🔍   - Is Collaborator: $isCollaborator");
+            debugPrint("🔍   - Match (either/both and not completed): $match");
+
+            return match;
+          }).toList();
+    }
+
+    debugPrint("🔍 Filtered tasks count: ${filteredTasks.length}");
+
+    // Additional debugging - show what we found
+    if (filteredTasks.isNotEmpty) {
+      debugPrint("🔍 Found tasks:");
+      for (var task in filteredTasks) {
+        debugPrint("🔍   - ${task['task_name']} (Status: ${task['status']})");
+      }
+    } else {
+      debugPrint("🔍 No tasks found for current filter");
+      if (selectedTabIndex.value == 1) {
+        debugPrint("🔍 Possible reasons for Assigned tab:");
+        debugPrint("🔍   1. User is not assignee or collaborator for any task");
+        debugPrint("🔍   2. All assigned tasks are completed (filtered out)");
+        debugPrint(
+          "🔍   3. Check if user ID matches exactly (including case sensitivity)",
+        );
+        debugPrint(
+          "🔍   4. Check if user ID is stored correctly in GetStorage",
+        );
+        debugPrint(
+          "🔍   5. Verify API response structure for assigned_to and collaborators",
+        );
+      }
+    }
+  }
+
   Future<void> fetchTasks() async {
     isLoading.value = true;
     errorMessage.value = '';
@@ -121,6 +247,7 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
         if (responseBody.containsKey('data') && responseBody['data'] is List) {
           final dataList = responseBody['data'] as List;
           tasks.value = dataList.map((e) => e as Map<String, dynamic>).toList();
+          filterTasks();
         } else {
           errorMessage.value =
               "Unexpected response format: missing 'data' array";
@@ -352,6 +479,91 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
     );
   }
 
+  Widget _buildTabBar() {
+    return Container(
+      margin: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildTabItem(
+              'Created',
+              0,
+              Icons.create_outlined,
+              selectedTabIndex.value == 0,
+            ),
+          ),
+          Expanded(
+            child: _buildTabItem(
+              'Assigned',
+              1,
+              Icons.assignment_outlined,
+              selectedTabIndex.value == 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabItem(
+    String title,
+    int index,
+    IconData icon,
+    bool isSelected,
+  ) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => switchTab(index),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 12.w),
+          decoration: BoxDecoration(
+            gradient:
+                isSelected
+                    ? LinearGradient(
+                      colors: [Colors.grey[800]!, Colors.grey[700]!],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
+                    : null,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 18.sp,
+                color: isSelected ? Colors.white : Colors.grey[600],
+              ),
+              SizedBox(width: 8.w),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? Colors.white : Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildTasksGridView() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -436,6 +648,9 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
           ),
         ),
 
+        // Tab Bar for Created and Assigned
+        _buildTabBar(),
+
         // Content area
         Expanded(
           child: Container(
@@ -476,7 +691,7 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
                 );
               }
 
-              if (tasks.isEmpty) {
+              if (filteredTasks.isEmpty) {
                 return Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -510,7 +725,7 @@ class _EmployeeProjectsState extends State<EmployeeProjects> {
                       bool isMobile = constraints.maxWidth < 600;
 
                       // Sort tasks by updatedAt date (latest first)
-                      final sortedTasks = List.from(tasks);
+                      final sortedTasks = List.from(filteredTasks);
                       sortedTasks.sort((a, b) {
                         final dateA =
                             DateTime.tryParse(a['updatedAt'] ?? '') ??
