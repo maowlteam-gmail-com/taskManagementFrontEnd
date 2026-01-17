@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:dio/dio.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:intl/intl.dart';
+import 'package:maowl/colors/app_colors.dart';
 import 'dart:html' as html;
 
 import 'package:maowl/util/dio_config.dart';
@@ -97,6 +98,7 @@ class HomeController extends GetxController {
   var isDownloading = false.obs;
   var isAssigning = false.obs;
   var isLoadingEmployees = false.obs;
+  var isRequirementDeleting = false.obs;
 
   @override
   void onInit() {
@@ -108,11 +110,15 @@ class HomeController extends GetxController {
     isLoading.value = true;
     error.value = '';
     try {
-      final response = await dio.get('${dotenv.env['BASE_URL']}/requirement/filtered');
+      debugPrint('${dotenv.env['BASE_URL']}/requirement/filtered');
+      final response = await dio.get(
+        '${dotenv.env['BASE_URL']}/requirement/filtered',
+      );
       if (response.statusCode == 200 && response.data['success'] == true) {
-        requirements.value = (response.data['data'] as List)
-            .map((item) => RequirementModel.fromJson(item))
-            .toList();
+        requirements.value =
+            (response.data['data'] as List)
+                .map((item) => RequirementModel.fromJson(item))
+                .toList();
       } else {
         error.value = 'Failed to load requirements';
       }
@@ -125,14 +131,54 @@ class HomeController extends GetxController {
     }
   }
 
+  Future<void> deleteRequirement(String requirementId) async {
+    isRequirementDeleting.value = true;
+    error.value = '';
+
+    try {
+      final response = await dio.delete(
+        '${dotenv.env['BASE_URL']}/requirement/delete/$requirementId',
+      );
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        // Closing dialog first
+        Get.back();
+
+        // Refreshing requirements
+        await fetchRequirements();
+
+        // Show success message
+        Get.snackbar(
+          "Success",
+          "Requirement deleted successfully!",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.black,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 3),
+        );
+      } else {
+        error.value = 'Failed to delete the requirement';
+      }
+    } on DioException catch (e) {
+      error.value = _handleDioError(e, "deleting requirement");
+    } catch (e) {
+      error.value = 'Unexpected error: ${e.toString()}';
+    } finally {
+      isRequirementDeleting.value = false;
+    }
+  }
+
   Future<void> fetchEmployees() async {
     isLoadingEmployees.value = true;
     try {
-      final response = await dio.get('${dotenv.env['BASE_URL']}/api/getEmployees');
+      final response = await dio.get(
+        '${dotenv.env['BASE_URL']}/api/getEmployees',
+      );
       if (response.statusCode == 200 && response.data['success'] == true) {
-        employees.value = (response.data['data'] as List)
-            .map((item) => EmployeeModel.fromJson(item))
-            .toList();
+        employees.value =
+            (response.data['data'] as List)
+                .map((item) => EmployeeModel.fromJson(item))
+                .toList();
       } else {
         _showError("Failed to load employees");
       }
@@ -163,9 +209,10 @@ class HomeController extends GetxController {
       if (response.statusCode == 200) {
         final blob = html.Blob([response.data]);
         final url = html.Url.createObjectUrlFromBlob(blob);
-        final anchor = html.AnchorElement(href: url)
-          ..target = 'blank'
-          ..download = fileName;
+        final anchor =
+            html.AnchorElement(href: url)
+              ..target = 'blank'
+              ..download = fileName;
         anchor.click();
         html.Url.revokeObjectUrl(url);
 
@@ -183,7 +230,10 @@ class HomeController extends GetxController {
     }
   }
 
-  Future<void> assignRequirement(String requirementId, String employeeId) async {
+  Future<void> assignRequirement(
+    String requirementId,
+    String employeeId,
+  ) async {
     isAssigning.value = true;
 
     try {
@@ -227,7 +277,7 @@ class HomeController extends GetxController {
           return data?['message'] ?? "Unknown error [$status] during $context.";
       }
     } else if (e.type == DioExceptionType.connectionTimeout ||
-               e.type == DioExceptionType.receiveTimeout) {
+        e.type == DioExceptionType.receiveTimeout) {
       return "Timeout while $context. Check your connection.";
     } else if (e.type == DioExceptionType.connectionError) {
       return "Connection error while $context.";
@@ -238,19 +288,26 @@ class HomeController extends GetxController {
 
   // Toast helpers
   void _showError(String message) {
-    Get.snackbar('Error', message,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withOpacity(0.8),
-        colorText: Colors.white);
+    Get.snackbar(
+      'Error',
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.red.withOpacity(0.8),
+      colorText: Colors.white,
+    );
   }
 
   void _showSuccess(String message) {
-    Get.snackbar('Success', message,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green.withOpacity(0.8),
-        colorText: Colors.white);
+    Get.snackbar(
+      'Success',
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.green.withOpacity(0.8),
+      colorText: Colors.white,
+    );
   }
 }
+
 class HomeScreen extends StatelessWidget {
   final HomeController controller = Get.put(HomeController());
 
@@ -279,30 +336,29 @@ class HomeScreen extends StatelessWidget {
       children: [
         Text(
           'Shared Requirements',
-          style: TextStyle(
-            fontSize: 24.sp,
-            fontWeight: FontWeight.bold,
+          style: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.bold),
+        ),
+        Obx(
+          () => Container(
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+            decoration: BoxDecoration(
+              color: Colors.grey[200],
+              borderRadius: BorderRadius.circular(8.r),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  controller.requirements.length.toString(),
+                  style: TextStyle(
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text('Total', style: TextStyle(fontSize: 14.sp)),
+              ],
+            ),
           ),
         ),
-        Obx(() => Container(
-          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-          decoration: BoxDecoration(
-            color: Colors.grey[200],
-            borderRadius: BorderRadius.circular(8.r),
-          ),
-          child: Column(
-            children: [
-              Text(
-                controller.requirements.length.toString(),
-                style: TextStyle(
-                  fontSize: 20.sp,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text('Total', style: TextStyle(fontSize: 14.sp)),
-            ],
-          ),
-        )),
       ],
     );
   }
@@ -313,11 +369,11 @@ class HomeScreen extends StatelessWidget {
         if (controller.isLoading.value) {
           return Center(child: CircularProgressIndicator());
         }
-        
+
         if (controller.error.value.isNotEmpty) {
           return Center(child: Text(controller.error.value));
         }
-        
+
         if (controller.requirements.isEmpty) {
           return Center(child: Text('No requirements found'));
         }
@@ -327,7 +383,7 @@ class HomeScreen extends StatelessWidget {
           builder: (context, constraints) {
             // Check if we're on a small screen (mobile view)
             bool isMobileView = constraints.maxWidth < 600;
-            
+
             return Column(
               children: [
                 // Table Header
@@ -400,7 +456,7 @@ class HomeScreen extends StatelessWidget {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16.sp,
-                          ), 
+                          ),
                         ),
                       ),
                       Expanded(
@@ -417,7 +473,7 @@ class HomeScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                
+
                 // Table Body
                 Expanded(
                   child: ListView.builder(
@@ -437,7 +493,9 @@ class HomeScreen extends StatelessWidget {
                               flex: 2,
                               child: Text(
                                 requirement.name,
-                                style: TextStyle(fontSize: isMobileView ? 16.sp : 14.sp),
+                                style: TextStyle(
+                                  fontSize: isMobileView ? 16.sp : 14.sp,
+                                ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -464,7 +522,9 @@ class HomeScreen extends StatelessWidget {
                               flex: isMobileView ? 3 : 3,
                               child: Text(
                                 requirement.message,
-                                style: TextStyle(fontSize: isMobileView ? 16.sp : 14.sp),
+                                style: TextStyle(
+                                  fontSize: isMobileView ? 16.sp : 14.sp,
+                                ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -473,27 +533,34 @@ class HomeScreen extends StatelessWidget {
                               Expanded(
                                 flex: 2,
                                 child: Text(
-                                  DateFormat('dd/MM/yyyy').format(requirement.createdAt),
+                                  DateFormat(
+                                    'dd/MM/yyyy',
+                                  ).format(requirement.createdAt),
                                   style: TextStyle(fontSize: 14.sp),
                                 ),
                               ),
                             Expanded(
                               flex: 2,
                               child: Container(
-                                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 8.w,
+                                  vertical: 4.h,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: requirement.status == 'pending' 
-                                      ? Colors.orange.shade100 
-                                      : Colors.green.shade100,
+                                  color:
+                                      requirement.status == 'pending'
+                                          ? Colors.orange.shade100
+                                          : Colors.green.shade100,
                                   borderRadius: BorderRadius.circular(4.r),
                                 ),
                                 child: Text(
                                   requirement.status.capitalizeFirst!,
                                   style: TextStyle(
                                     fontSize: 12.sp,
-                                    color: requirement.status == 'pending' 
-                                        ? Colors.orange.shade800 
-                                        : Colors.green.shade800,
+                                    color:
+                                        requirement.status == 'pending'
+                                            ? Colors.orange.shade800
+                                            : Colors.green.shade800,
                                   ),
                                   textAlign: TextAlign.center,
                                 ),
@@ -508,7 +575,10 @@ class HomeScreen extends StatelessWidget {
                                   },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.black,
-                                    padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 10.w,
+                                      vertical: 15.h,
+                                    ),
                                     minimumSize: Size(40.w, 30.h),
                                   ),
                                   child: Text(
@@ -521,6 +591,16 @@ class HomeScreen extends StatelessWidget {
                                 ),
                               ),
                             ),
+
+                            Expanded(
+                              child: IconButton(
+                                onPressed: () => _showDeleteDialog(requirement),
+                                icon: Icon(
+                                  Icons.delete_rounded,
+                                  color: AppColors.delayedColor,
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       );
@@ -529,7 +609,7 @@ class HomeScreen extends StatelessWidget {
                 ),
               ],
             );
-          }
+          },
         );
       }),
     );
@@ -537,10 +617,10 @@ class HomeScreen extends StatelessWidget {
 
   void _showRequirementDetails(RequirementModel requirement) {
     final controller = Get.find<HomeController>();
-    
+
     // Fetch employees when opening the dialog
     controller.fetchEmployees();
-    
+
     Get.dialog(
       Dialog(
         shape: RoundedRectangleBorder(
@@ -580,85 +660,100 @@ class HomeScreen extends StatelessWidget {
                     _detailRow('Email', requirement.email),
                     _detailRow('Phone', requirement.phone),
                     _detailRow('Status', requirement.status.capitalizeFirst!),
-                    _detailRow('Date', DateFormat('dd/MM/yyyy HH:mm').format(requirement.createdAt)),
+                    _detailRow(
+                      'Date',
+                      DateFormat(
+                        'dd/MM/yyyy HH:mm',
+                      ).format(requirement.createdAt),
+                    ),
                     _detailRow('Message', requirement.message),
-                    
+
                     // Show assigned employee if any
-                    if (requirement.assignedTo != null && requirement.assignedTo!.containsKey('username'))
-                      _detailRow('Assigned To', requirement.assignedTo!['username']),
+                    if (requirement.assignedTo != null &&
+                        requirement.assignedTo!.containsKey('username'))
+                      _detailRow(
+                        'Assigned To',
+                        requirement.assignedTo!['username'],
+                      ),
                   ],
                 ),
               ),
               SizedBox(height: 20.h),
-              
+
               // Action buttons in a centered row
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (requirement.pdfFile.isNotEmpty)
-                    Obx(() => controller.isDownloading.value 
-                      ? SizedBox(
-                          width: 200.w,
-                          child: Column(
-                            children: [
-                              LinearProgressIndicator(
-                                value: controller.downloadProgress.value,
-                                backgroundColor: Colors.grey[300],
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                    Obx(
+                      () =>
+                          controller.isDownloading.value
+                              ? SizedBox(
+                                width: 200.w,
+                                child: Column(
+                                  children: [
+                                    LinearProgressIndicator(
+                                      value: controller.downloadProgress.value,
+                                      backgroundColor: Colors.grey[300],
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.black,
+                                      ),
+                                    ),
+                                    SizedBox(height: 8.h),
+                                    Text(
+                                      'Downloading: ${(controller.downloadProgress.value * 100).toStringAsFixed(0)}%',
+                                      style: TextStyle(fontSize: 12.sp),
+                                    ),
+                                  ],
+                                ),
+                              )
+                              : ElevatedButton.icon(
+                                onPressed: () {
+                                  controller.downloadPdf(
+                                    requirement.id,
+                                    requirement.pdfFile,
+                                  );
+                                },
+                                icon: Icon(Icons.file_download),
+                                label: Text('Download'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.black,
+                                  foregroundColor: Colors.white,
+                                ),
                               ),
-                              SizedBox(height: 8.h),
-                              Text(
-                                'Downloading: ${(controller.downloadProgress.value * 100).toStringAsFixed(0)}%',
-                                style: TextStyle(fontSize: 12.sp),
-                              ),
-                            ],
-                          ),
-                        )
-                      : ElevatedButton.icon(
-                          onPressed: () {
-                            controller.downloadPdf(
-                              requirement.id, 
-                              requirement.pdfFile,
-                            );
-                          },
-                          icon: Icon(Icons.file_download),
-                          label: Text('Download'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
-                            foregroundColor: Colors.white,
-                          ),
-                        ),
                     ),
                   SizedBox(width: 12.w),
                   if (requirement.status == 'pending')
-                    Obx(() => controller.isAssigning.value
-                      ? ElevatedButton.icon(
-                          onPressed: null,
-                          icon: SizedBox(
-                            height: 12.h,
-                            width: 12.w,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          ),
-                          label: Text('Processing...'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
-                            foregroundColor: Colors.white,
-                          ),
-                        )
-                      : ElevatedButton.icon(
-                          onPressed: () {
-                            _showAssignDialog(requirement.id);
-                          },
-                          icon: Icon(Icons.assignment_ind),
-                          label: Text('Assign'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
-                            foregroundColor: Colors.white,
-                          ),
-                        ),
+                    Obx(
+                      () =>
+                          controller.isAssigning.value
+                              ? ElevatedButton.icon(
+                                onPressed: null,
+                                icon: SizedBox(
+                                  height: 12.h,
+                                  width: 12.w,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                                label: Text('Processing...'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.black,
+                                  foregroundColor: Colors.white,
+                                ),
+                              )
+                              : ElevatedButton.icon(
+                                onPressed: () {
+                                  _showAssignDialog(requirement.id);
+                                },
+                                icon: Icon(Icons.assignment_ind),
+                                label: Text('Assign'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.black,
+                                  foregroundColor: Colors.white,
+                                ),
+                              ),
                     ),
                 ],
               ),
@@ -670,10 +765,77 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  void _showDeleteDialog(RequirementModel requirement) {
+    final controller = Get.find<HomeController>();
+
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        child: Container(
+          width: 300.w,
+          padding: EdgeInsets.all(20.r),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Are you sure?',
+                style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 2.h),
+              Text(
+                'Do you really want to delete this requirement from ${requirement.name}',
+                style: TextStyle(fontSize: 15.sp),
+              ),
+              SizedBox(height: 20.h),
+
+              // Action buttons
+              Obx(
+                () => Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Get.back(),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(color: Colors.black),
+                      ),
+                    ),
+                    SizedBox(width: 12.w),
+                    controller.isRequirementDeleting.value
+                        ? Center(child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 5.w),
+                          child: SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator()),
+                        ))
+                        : ElevatedButton(
+                          onPressed: () async {
+                            await controller.deleteRequirement(requirement.id);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.delayedColor,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: Text('Delete'),
+                        ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showAssignDialog(String requirementId) {
     final controller = Get.find<HomeController>();
     String? selectedEmployeeId;
-    
+
     Get.dialog(
       Dialog(
         shape: RoundedRectangleBorder(
@@ -693,7 +855,7 @@ class HomeScreen extends StatelessWidget {
                 ],
               );
             }
-            
+
             if (controller.employees.isEmpty) {
               return Column(
                 mainAxisSize: MainAxisSize.min,
@@ -711,7 +873,7 @@ class HomeScreen extends StatelessWidget {
                 ],
               );
             }
-            
+
             return StatefulBuilder(
               builder: (context, setState) {
                 return Column(
@@ -726,11 +888,14 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
                     SizedBox(height: 20.h),
-                    
+
                     // Employee dropdown - uses username instead of name and email
                     Container(
                       width: double.infinity,
-                      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 12.w,
+                        vertical: 4.h,
+                      ),
                       decoration: BoxDecoration(
                         border: Border.all(color: Colors.grey.shade300),
                         borderRadius: BorderRadius.circular(8.r),
@@ -740,12 +905,13 @@ class HomeScreen extends StatelessWidget {
                           hint: Text('Select an employee'),
                           value: selectedEmployeeId,
                           isExpanded: true,
-                          items: controller.employees.map((employee) {
-                            return DropdownMenuItem<String>(
-                              value: employee.id,
-                              child: Text(employee.username),
-                            );
-                          }).toList(),
+                          items:
+                              controller.employees.map((employee) {
+                                return DropdownMenuItem<String>(
+                                  value: employee.id,
+                                  child: Text(employee.username),
+                                );
+                              }).toList(),
                           onChanged: (value) {
                             setState(() {
                               selectedEmployeeId = value;
@@ -754,29 +920,33 @@ class HomeScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    
+
                     SizedBox(height: 24.h),
-                    
+
                     // Action buttons
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         TextButton(
                           onPressed: () => Get.back(),
-                          child: Text('Cancel', style: TextStyle(color: Colors.black),),
+                          child: Text(
+                            'Cancel',
+                            style: TextStyle(color: Colors.black),
+                          ),
                         ),
                         SizedBox(width: 12.w),
                         ElevatedButton(
-                          onPressed: selectedEmployeeId == null 
-                              ? null 
-                              : () {
-                                  Get.back(); // Close assign dialog
-                                  controller.assignRequirement(
-                                    requirementId, 
-                                    selectedEmployeeId!,
-                                  );
-                                  Get.back(); // Close requirement details dialog
-                                },
+                          onPressed:
+                              selectedEmployeeId == null
+                                  ? null
+                                  : () {
+                                    Get.back(); // Close assign dialog
+                                    controller.assignRequirement(
+                                      requirementId,
+                                      selectedEmployeeId!,
+                                    );
+                                    Get.back(); // Close requirement details dialog
+                                  },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.black,
                             foregroundColor: Colors.white,
@@ -805,18 +975,10 @@ class HomeScreen extends StatelessWidget {
             width: 100.w,
             child: Text(
               '$label:',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14.sp,
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.sp),
             ),
           ),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(fontSize: 14.sp),
-            ),
-          ),
+          Expanded(child: Text(value, style: TextStyle(fontSize: 14.sp))),
         ],
       ),
     );

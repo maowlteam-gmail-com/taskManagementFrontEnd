@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:maowl/colors/app_colors.dart';
 import 'package:maowl/screens/adminScreen/controller/adminScreenController.dart';
 import 'package:maowl/screens/adminScreen/widgets/employeeProjects.dart';
 
@@ -15,28 +16,30 @@ class EmployeeList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     bool isMobile = Get.width < 600;
-    return Obx(() => isViewingProjects.value
-        ? EmployeeProjects(
-            employee: controller.selectedEmployee.value!,
-            onBack: () => isViewingProjects.value = false,
-          )
-        : _buildEmployeeListScreen());
+    return Obx(
+      () =>
+          isViewingProjects.value
+              ? EmployeeProjects(
+                employee: controller.selectedEmployee.value!,
+                onBack: () => isViewingProjects.value = false,
+              )
+              : _buildEmployeeListScreen(),
+    );
   }
 
   // Show rename confirmation dialog
   void _showRenameDialog(Map<String, dynamic> employee) {
     final id = employee['_id'] ?? '';
     final currentName = employee['username'] ?? '';
-    final TextEditingController nameController = TextEditingController(text: currentName);
-    
+    final TextEditingController nameController = TextEditingController(
+      text: currentName,
+    );
+
     Get.dialog(
       AlertDialog(
         title: Text(
-          'Rename Employee', 
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
+          'Rename Employee',
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -69,13 +72,8 @@ class EmployeeList extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Get.back(),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.black,
-            ),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: Colors.black54),
-            ),
+            style: TextButton.styleFrom(foregroundColor: Colors.black),
+            child: Text('Cancel', style: TextStyle(color: Colors.black54)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -100,7 +98,7 @@ class EmployeeList extends StatelessWidget {
                 );
                 return;
               }
-              
+
               Get.back();
               await controller.renameEmployee(id, currentName, newUsername);
             },
@@ -125,15 +123,12 @@ class EmployeeList extends StatelessWidget {
   void _showDeleteConfirmation(Map<String, dynamic> employee) {
     final id = employee['_id'] ?? '';
     final name = employee['username'] ?? 'Unknown';
-    
+
     Get.dialog(
       AlertDialog(
         title: Text(
-          'Delete Employee', 
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
+          'Delete Employee',
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
         ),
         content: Text(
           'Are you sure you want to delete $name?',
@@ -147,13 +142,8 @@ class EmployeeList extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Get.back(),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.black,
-            ),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: Colors.black54),
-            ),
+            style: TextButton.styleFrom(foregroundColor: Colors.black),
+            child: Text('Cancel', style: TextStyle(color: Colors.black54)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -178,6 +168,8 @@ class EmployeeList extends StatelessWidget {
   }
 
   Widget _buildEmployeeListScreen() {
+    final chipList = ['All', 'Employee', 'Intern', 'Team Lead'];
+
     return Container(
       color: Colors.white,
       child: Obx(() {
@@ -237,12 +229,42 @@ class EmployeeList extends StatelessWidget {
           children: [
             Padding(
               padding: EdgeInsets.all(16.sp),
-              child: Text(
-                'Employees List',
-                style: TextStyle(
-                  fontSize: 24.sp,
-                  fontWeight: FontWeight.bold,
-                ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Employees List',
+                    style: TextStyle(
+                      fontSize: 24.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                  Row(
+                    children:
+                        chipList
+                            .map(
+                              (chip) => Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8.0,
+                                ),
+                                child: ChoiceChip(
+                                  label: Text(chip),
+                                  selectedColor: Colors.black,
+                                  checkmarkColor: Colors.white,
+                                  selected: chip == 'All',
+                                  labelStyle: TextStyle(
+                                    color:
+                                        chip == 'All'
+                                            ? Colors.white
+                                            : Colors.black,
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                  ),
+                ],
               ),
             ),
             Divider(height: 1),
@@ -256,7 +278,8 @@ class EmployeeList extends StatelessWidget {
                     final employee = controller.employees[index];
                     // Use username instead of name since that's what the API returns
                     final name = employee['username'] ?? 'Unknown';
-                    final firstLetter = name.isNotEmpty ? name[0].toUpperCase() : 'U';
+                    final firstLetter =
+                        name.isNotEmpty ? name[0].toUpperCase() : 'U';
                     final id = employee['_id'] ?? '';
 
                     return ListTile(
@@ -272,9 +295,10 @@ class EmployeeList extends StatelessWidget {
                         children: [
                           Text('Password: '),
                           Obx(() {
-                            final isEditing = isEditingPassword.value && 
-                                             controller.selectedEmployee.value?['_id'] == id;
-                            
+                            final isEditing =
+                                isEditingPassword.value &&
+                                controller.selectedEmployee.value?['_id'] == id;
+
                             if (isEditing) {
                               return Expanded(
                                 child: TextField(
@@ -290,32 +314,40 @@ class EmployeeList extends StatelessWidget {
                                       borderRadius: BorderRadius.circular(4.sp),
                                     ),
                                   ),
-                                  onChanged: (value) => newPassword.value = value,
+                                  onChanged:
+                                      (value) => newPassword.value = value,
                                 ),
                               );
                             } else {
-                              return Text('********', 
-                                style: TextStyle(fontStyle: FontStyle.italic));
+                              return Text(
+                                '********',
+                                style: TextStyle(fontStyle: FontStyle.italic),
+                              );
                             }
                           }),
                           SizedBox(width: 8.w),
                           Obx(() {
                             // Fixed here - using _id instead of id
-                            final isEditing = isEditingPassword.value && 
-                                             controller.selectedEmployee.value?['_id'] == id;
-                            
+                            final isEditing =
+                                isEditingPassword.value &&
+                                controller.selectedEmployee.value?['_id'] == id;
+
                             if (isEditing) {
                               return Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   IconButton(
-                                    icon: Icon(Icons.check, color: Colors.green),
+                                    icon: Icon(
+                                      Icons.check,
+                                      color: Colors.green,
+                                    ),
                                     onPressed: () async {
                                       if (newPassword.value.isNotEmpty) {
-                                        final success = await controller.updateEmployeePassword(
-                                          id, 
-                                          newPassword.value
-                                        );
+                                        final success = await controller
+                                            .updateEmployeePassword(
+                                              id,
+                                              newPassword.value,
+                                            );
                                         if (success) {
                                           isEditingPassword.value = false;
                                           newPassword.value = "";
@@ -368,7 +400,11 @@ class EmployeeList extends StatelessWidget {
                         children: [
                           // Rename Button
                           IconButton(
-                            icon: Icon(Icons.drive_file_rename_outline, color: Colors.black, size: 20.sp),
+                            icon: Icon(
+                              Icons.drive_file_rename_outline,
+                              color: Colors.black,
+                              size: 20.sp,
+                            ),
                             onPressed: () {
                               controller.setSelectedEmployee(employee);
                               _showRenameDialog(employee);
@@ -376,7 +412,11 @@ class EmployeeList extends StatelessWidget {
                             tooltip: 'Rename Employee',
                           ),
                           IconButton(
-                            icon: Icon(Icons.delete, color: Colors.black, size: 20.sp,),
+                            icon: Icon(
+                              Icons.delete,
+                              color: Colors.black,
+                              size: 20.sp,
+                            ),
                             onPressed: () {
                               controller.setSelectedEmployee(employee);
                               _showDeleteConfirmation(employee);
@@ -388,9 +428,10 @@ class EmployeeList extends StatelessWidget {
                           ElevatedButton(
                             onPressed: () {
                               controller.setSelectedEmployee(employee);
-                              Get.toNamed('/employee-history', arguments: {
-                                'employee': employee,
-                              });
+                              Get.toNamed(
+                                '/employee-history',
+                                arguments: {'employee': employee},
+                              );
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.grey[800],
