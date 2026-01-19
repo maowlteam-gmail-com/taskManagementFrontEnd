@@ -237,7 +237,8 @@ class HomeController extends GetxController {
     isAssigning.value = true;
 
     try {
-      final response = await dio.patch(
+      debugPrint('${dotenv.env['BASE_URL']}/requirement/$requirementId/assign/$employeeId');
+      final response = await dio.put(
         '${dotenv.env['BASE_URL']}/requirement/$requirementId/assign',
         data: {"employeeId": employeeId},
       );
