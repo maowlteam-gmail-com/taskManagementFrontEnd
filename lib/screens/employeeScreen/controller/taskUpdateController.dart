@@ -407,7 +407,7 @@ class TaskUpdateController extends GetxController {
 
     try {
       final dio = dio_pkg.Dio();
-      final response = await dio.patch(
+      final response = await dio.post(
         '${dotenv.env['BASE_URL']}/api/tasks/addCollaborator/$taskId',
         options: dio_pkg.Options(
           headers: {
