@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:dio/dio.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:maowl/functions/common_functions.dart';
 import 'package:maowl/util/dio_config.dart';
 
 class AdminScreenController extends GetxController {
@@ -23,6 +24,8 @@ class AdminScreenController extends GetxController {
 
   RxList<Map<String, dynamic>> teamsList = <Map<String, dynamic>>[].obs;
   RxList<Map<String, dynamic>> employees = <Map<String, dynamic>>[].obs;
+  RxList<Map<String, dynamic>> filteredEmployees = <Map<String, dynamic>>[].obs;
+  RxString selectedDesignation = "All".obs;
   RxBool isLoading = false.obs;
   RxString errorMessage = "".obs;
   Rx<Map<String, dynamic>?> selectedEmployee = Rx<Map<String, dynamic>?>(null);
@@ -32,6 +35,26 @@ class AdminScreenController extends GetxController {
 
   void addTeam(Map<String, dynamic> teamData) {
     teamsList.add(teamData);
+  }
+
+  void selectDesignation(String designation) {
+    selectedDesignation.value = designation;
+    filterEmployeesByDesignation();
+  }
+
+  void filterEmployeesByDesignation() {
+    if (selectedDesignation.value == "All") {
+      filteredEmployees.assignAll(employees);
+    } else {
+      filteredEmployees.assignAll(
+        employees
+            .where(
+              (emp) =>
+                  emp['designation'] == roleToApi(selectedDesignation.value),
+            )
+            .toList(),
+      );
+    }
   }
 
   Future<void> loadAdminName() async {
@@ -52,9 +75,7 @@ class AdminScreenController extends GetxController {
 
   Future<void> fetchAdminProfile() async {
     try {
-      final response = await _dio.get(
-        '${dotenv.env['BASE_URL']}/api/profile',
-      );
+      final response = await _dio.get('${dotenv.env['BASE_URL']}/api/profile');
 
       if (response.statusCode == 200) {
         final profileData = response.data;
@@ -75,18 +96,23 @@ class AdminScreenController extends GetxController {
     errorMessage.value = "";
 
     try {
-      final response = await _dio.get('${dotenv.env['BASE_URL']}/api/getEmployees');
+      final response = await _dio.get(
+        '${dotenv.env['BASE_URL']}/api/getEmployees',
+      );
 
       if (response.statusCode == 200) {
         final responseBody = response.data as Map<String, dynamic>;
         if (responseBody.containsKey('data') && responseBody['data'] is List) {
           final dataList = responseBody['data'] as List;
-          employees.value = dataList
-              .map((e) => e as Map<String, dynamic>)
-              .where((emp) => emp['role'] != 'admin')
-              .toList();
+          employees.value =
+              dataList
+                  .map((e) => e as Map<String, dynamic>)
+                  .where((emp) => emp['role'] != 'admin')
+                  .toList();
+          filterEmployeesByDesignation();
         } else {
-          errorMessage.value = "Unexpected response format: missing 'data' array";
+          errorMessage.value =
+              "Unexpected response format: missing 'data' array";
         }
       } else {
         errorMessage.value = "Failed to load employees: ${response.statusCode}";
@@ -98,17 +124,18 @@ class AdminScreenController extends GetxController {
     }
   }
 
-  Future<bool> renameEmployee(String employeeId, String currentUsername, String newUsername) async {
+  Future<bool> renameEmployee(
+    String employeeId,
+    String currentUsername,
+    String newUsername,
+  ) async {
     isLoading.value = true;
     errorMessage.value = "";
 
     try {
       final response = await _dio.patch(
         '${dotenv.env['BASE_URL']}/api/renameEmployee',
-        data: {
-          'username': currentUsername,
-          'newUsername': newUsername,
-        },
+        data: {'username': currentUsername, 'newUsername': newUsername},
       );
 
       if (response.statusCode == 200) {
@@ -118,34 +145,104 @@ class AdminScreenController extends GetxController {
           employees.refresh();
         }
 
-        Get.snackbar("Success", "Employee username updated successfully",
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.black,
-            colorText: Colors.white,
-            duration: Duration(seconds: 3));
+        Get.snackbar(
+          "Success",
+          "Employee username updated successfully",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.black,
+          colorText: Colors.white,
+          duration: Duration(seconds: 3),
+        );
 
         return true;
       } else {
-        Get.snackbar("Failed", "Failed to rename employee: ${response.statusCode}",
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.red,
-            colorText: Colors.white);
-        errorMessage.value = "Failed to rename employee: ${response.statusCode}";
+        Get.snackbar(
+          "Failed",
+          "Failed to rename employee: ${response.statusCode}",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        errorMessage.value =
+            "Failed to rename employee: ${response.statusCode}";
         return false;
       }
     } catch (e) {
       errorMessage.value = "Error renaming employee: $e";
-      Get.snackbar("Error", "Error renaming employee: $e",
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white);
+      Get.snackbar(
+        "Error",
+        "Error renaming employee: $e",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
       return false;
     } finally {
       isLoading.value = false;
     }
   }
 
-  Future<bool> updateEmployeePassword(String employeeId, String newPassword) async {
+  Future<bool> updateEmployee(String employeeId, String selectedRole) async {
+    isLoading.value = true;
+    errorMessage.value = "";
+
+    try {
+      print('${dotenv.env['BASE_URL']}/api/upDesignation/$employeeId');
+      final response = await _dio.patch(
+        '${dotenv.env['BASE_URL']}/api/upDesignation/$employeeId',
+        data: {'designation': selectedRole},
+      );
+
+      print(response.statusCode);
+
+      if (response.statusCode == 200) {
+        final index = employees.indexWhere((emp) => emp['_id'] == employeeId);
+        if (index != -1) {
+          employees[index]['designation'] = selectedRole;
+          employees.refresh();
+        }
+
+        Get.snackbar(
+          "Success",
+          "Employee details updated successfully",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.black,
+          colorText: Colors.white,
+          duration: Duration(seconds: 3),
+        );
+
+        return true;
+      } else {
+        Get.snackbar(
+          "Failed",
+          "Failed to update employee details: ${response.statusCode}",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        errorMessage.value =
+            "Failed to update employee details: ${response.statusCode}";
+        return false;
+      }
+    } catch (e) {
+      errorMessage.value = "Error updating employee details: $e";
+      Get.snackbar(
+        "Error",
+        "Error updating employee details: $e",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<bool> updateEmployeePassword(
+    String employeeId,
+    String newPassword,
+  ) async {
     isLoading.value = true;
     errorMessage.value = "";
 
@@ -161,19 +258,26 @@ class AdminScreenController extends GetxController {
           employees[index]['password'] = newPassword;
           employees.refresh();
         }
-        Get.snackbar("Success", "Password Updated successfully",
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.black87,
-            colorText: Colors.white,
-            duration: Duration(seconds: 3));
+        Get.snackbar(
+          "Success",
+          "Password Updated successfully",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.black87,
+          colorText: Colors.white,
+          duration: Duration(seconds: 3),
+        );
 
         return true;
       } else {
-        Get.snackbar("Failed", "Failed to update password: ${response.statusCode}",
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.black87,
-            colorText: Colors.white);
-        errorMessage.value = "Failed to update password: ${response.statusCode}";
+        Get.snackbar(
+          "Failed",
+          "Failed to update password: ${response.statusCode}",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.black87,
+          colorText: Colors.white,
+        );
+        errorMessage.value =
+            "Failed to update password: ${response.statusCode}";
         return false;
       }
     } catch (e) {
@@ -197,27 +301,37 @@ class AdminScreenController extends GetxController {
         employees.removeWhere((emp) => emp['_id'] == employeeId);
         employees.refresh();
 
-        Get.snackbar("Success", "Employee deleted successfully",
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.black87,
-            colorText: Colors.white,
-            duration: Duration(seconds: 3));
+        Get.snackbar(
+          "Success",
+          "Employee deleted successfully",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.black87,
+          colorText: Colors.white,
+          duration: Duration(seconds: 3),
+        );
 
         return true;
       } else {
-        Get.snackbar("Failed", "Failed to delete employee: ${response.statusCode}",
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.black87,
-            colorText: Colors.white);
-        errorMessage.value = "Failed to delete employee: ${response.statusCode}";
+        Get.snackbar(
+          "Failed",
+          "Failed to delete employee: ${response.statusCode}",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.black87,
+          colorText: Colors.white,
+        );
+        errorMessage.value =
+            "Failed to delete employee: ${response.statusCode}";
         return false;
       }
     } catch (e) {
       errorMessage.value = "Error deleting employee: $e";
-      Get.snackbar("Error", "Error deleting employee: $e",
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.black87,
-          colorText: Colors.white);
+      Get.snackbar(
+        "Error",
+        "Error deleting employee: $e",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.black87,
+        colorText: Colors.white,
+      );
       return false;
     } finally {
       isLoading.value = false;
@@ -237,26 +351,35 @@ class AdminScreenController extends GetxController {
         box.remove('userName');
         box.remove('adminName');
 
-        Get.snackbar("Success", "Logged out successfully",
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.black87,
-            colorText: Colors.white,
-            duration: Duration(seconds: 2));
+        Get.snackbar(
+          "Success",
+          "Logged out successfully",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.black87,
+          colorText: Colors.white,
+          duration: Duration(seconds: 2),
+        );
 
         Get.offAllNamed('/mainsite');
       } else {
         errorMessage.value = "Failed to logout: ${response.statusCode}";
-        Get.snackbar("Error", "Failed to logout: ${response.statusCode}",
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.black87,
-            colorText: Colors.white);
+        Get.snackbar(
+          "Error",
+          "Failed to logout: ${response.statusCode}",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.black87,
+          colorText: Colors.white,
+        );
       }
     } catch (e) {
       errorMessage.value = "Error during logout: $e";
-      Get.snackbar("Error", "Error during logout: $e",
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.black87,
-          colorText: Colors.white);
+      Get.snackbar(
+        "Error",
+        "Error during logout: $e",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.black87,
+        colorText: Colors.white,
+      );
     } finally {
       isLoading.value = false;
     }

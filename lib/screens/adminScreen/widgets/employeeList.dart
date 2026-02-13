@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:maowl/colors/app_colors.dart';
+import 'package:maowl/functions/common_functions.dart';
 import 'package:maowl/screens/adminScreen/controller/adminScreenController.dart';
 import 'package:maowl/screens/adminScreen/widgets/employeeProjects.dart';
 
@@ -24,6 +25,158 @@ class EmployeeList extends StatelessWidget {
                 onBack: () => isViewingProjects.value = false,
               )
               : _buildEmployeeListScreen(),
+    );
+  }
+
+  void _showEditEmployeeDialog(Map<String, dynamic> employee) {
+    final id = employee['_id'] ?? '';
+    final currentName = employee['username'] ?? '';
+    String? currentRole = employee['designation'];
+
+    final TextEditingController nameController = TextEditingController(
+      text: currentName,
+    );
+
+    final List<String> roles = ['Staff', 'Intern', 'Team Lead'];
+    String? selectedRole = currentRole;
+
+    Get.dialog(
+      AlertDialog(
+        title: const Text(
+          'Edit Employee',
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            /// Rename
+            Text(
+              'Username',
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
+              ),
+            ),
+            SizedBox(height: 8.h),
+            TextField(
+              controller: nameController,
+              decoration: InputDecoration(
+                labelText: 'New Username',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8.sp),
+                ),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 12.w,
+                  vertical: 12.h,
+                ),
+              ),
+            ),
+
+            SizedBox(height: 16.h),
+
+            /// Role Dropdown
+            Text(
+              'Designation / Role',
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
+              ),
+            ),
+            SizedBox(height: 8.h),
+            DropdownButtonFormField<String>(
+              value:
+                  selectedRole == null
+                      ? null
+                      : roleToDisplay(selectedRole), // null → shows hint
+              hint: const Text('Select role'),
+              items:
+                  roles
+                      .map(
+                        (role) =>
+                            DropdownMenuItem(value: role, child: Text(role)),
+                      )
+                      .toList(),
+              onChanged: (value) {
+                selectedRole = roleToApi(value!);
+              },
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8.sp),
+                ),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 12.w,
+                  vertical: 12.h,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8.sp),
+          side: BorderSide(color: Colors.grey.shade300),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            style: TextButton.styleFrom(foregroundColor: Colors.black),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.black54),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final newUsername = nameController.text.trim();
+
+              if (newUsername.isEmpty) {
+                Get.snackbar(
+                  "Error",
+                  "Username cannot be empty",
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: Colors.red,
+                  colorText: Colors.white,
+                );
+                return;
+              }
+
+              if (newUsername == currentName && selectedRole == currentRole) {
+                Get.snackbar(
+                  "No Changes",
+                  "Please update username or role",
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: Colors.orange,
+                  colorText: Colors.white,
+                );
+                return;
+              }
+
+              debugPrint("Role now:" + (selectedRole ?? "null"));
+
+              Get.back();
+
+              await controller.updateEmployee(id, selectedRole!);
+              if (newUsername != currentName) {
+                await controller.renameEmployee(id, currentName, newUsername);
+              }
+
+              controller.selectDesignation("All");
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.black,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(4.sp),
+              ),
+            ),
+            child: const Text('Update'),
+          ),
+        ],
+        actionsPadding: EdgeInsets.symmetric(horizontal: 16.sp, vertical: 8.sp),
+      ),
+      barrierDismissible: false,
     );
   }
 
@@ -168,7 +321,7 @@ class EmployeeList extends StatelessWidget {
   }
 
   Widget _buildEmployeeListScreen() {
-    final chipList = ['All', 'Employee', 'Intern', 'Team Lead'];
+    final chipList = ['All', 'Staff', 'Intern', 'Team Lead'];
 
     return Container(
       color: Colors.white,
@@ -250,12 +403,20 @@ class EmployeeList extends StatelessWidget {
                                 ),
                                 child: ChoiceChip(
                                   label: Text(chip),
+                                  onSelected:
+                                      (value) =>
+                                          controller.selectDesignation(chip),
                                   selectedColor: Colors.black,
                                   checkmarkColor: Colors.white,
-                                  selected: chip == 'All',
+                                  selected:
+                                      chip ==
+                                      controller.selectedDesignation.value,
                                   labelStyle: TextStyle(
                                     color:
-                                        chip == 'All'
+                                        chip ==
+                                                controller
+                                                    .selectedDesignation
+                                                    .value
                                             ? Colors.white
                                             : Colors.black,
                                   ),
@@ -272,10 +433,10 @@ class EmployeeList extends StatelessWidget {
               child: RefreshIndicator(
                 onRefresh: () => controller.fetchEmployees(),
                 child: ListView.separated(
-                  itemCount: controller.employees.length,
+                  itemCount: controller.filteredEmployees.length,
                   separatorBuilder: (context, index) => Divider(height: 1),
                   itemBuilder: (context, index) {
-                    final employee = controller.employees[index];
+                    final employee = controller.filteredEmployees[index];
                     // Use username instead of name since that's what the API returns
                     final name = employee['username'] ?? 'Unknown';
                     final firstLetter =
@@ -401,15 +562,15 @@ class EmployeeList extends StatelessWidget {
                           // Rename Button
                           IconButton(
                             icon: Icon(
-                              Icons.drive_file_rename_outline,
+                              Icons.edit_note_rounded,
                               color: Colors.black,
                               size: 20.sp,
                             ),
                             onPressed: () {
                               controller.setSelectedEmployee(employee);
-                              _showRenameDialog(employee);
+                              _showEditEmployeeDialog(employee);
                             },
-                            tooltip: 'Rename Employee',
+                            tooltip: 'Edit Employee',
                           ),
                           IconButton(
                             icon: Icon(
